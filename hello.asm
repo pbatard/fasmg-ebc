@@ -3,10 +3,6 @@
 ; Copyright © 2016 Pete Batard <pete@akeo.ie> - Public Domain
 ;
 
-; NB: Note the following changes from the intel syntax:
-;     @Rx         -> [Rx]
-;     @Rx (+n,+c) -> [Rx] (+n:+c)
-
 include 'ebc.inc'
 include 'efi.inc'
 include 'format.inc'
@@ -26,6 +22,6 @@ efi_main:
 section '.data' data readable writeable
   Indexed:  dq EFI_NOT_FOUND
             dq EFI_NOT_FOUND
-  TestData: dq EFI_NOT_READY
+  TestData: dq EFI_NOT_FOUND
 
 section '.reloc' fixups data discardable

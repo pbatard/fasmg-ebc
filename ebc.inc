@@ -28,45 +28,51 @@ macro ebc.parse_register reg_num, Rn
   reg_num = value metadata 1 - R
 end macro
 
-macro ebc.compute_index index_size, nat, cst
-  local abs_cst, abs_nat, sign, width
+macro di width, val
+  if (width = 0)
+    db val
+  else if (width = 1)
+    dw val
+  else if (width = 2)
+    dl val
+  else if (width = 3)
+    dq val
+  end if
+end macro
+
+macro ebc.insert_index index_size, nat, cst
+  local abs_cst, abs_nat, sign, width, nbits
   sign = 0
-  width = 0
+  nbits = index_size / 8
   if ((cst < 0) & (nat > 0)) | ((cst > 0) & (nat < 0))
      err 'constant and natural values must have the same sign'
   end if
+
   if (cst < 0)
     sign = 1
     cst = -cst
     nat = -nat
   end if
-  if (index_size = 16)
-    if (nat = 0)
-      width = 000b
-    else if (nat < 100b)
-      width = 001b
-    else if (nat < 10000b)
-      width = 010b
-    else if (nat < 1000000b)
-      width = 011b
-    else if (nat < 100000000b)
-      width = 100b
-    else if (nat < 10000000000b)
-      width = 101b
-    else if (nat < 1000000000000b)
-      width = 110b
-    else
-      err 'natural value too large to be encoded on 16 bit'
-    end if
-    if (cst >= 1 shl (12 - (width*2)))
-      err 'constant and natural values too large to be encoded on 16 bit'
-    end if
-    dw sign shl 15 + width shl 12 + cst shl (width*2) + nat
-  else if (index_size = 32)
-    ; TODO
-  else if (index_size = 64)
-    ; TODO
+
+  width = 8
+  if (nat = 0)
+    width = 0
+  else
+    repeat 7
+      if (nat < (1 shl (% * nbits)))
+        width = %
+        break
+      end if
+    end repeat
   end if
+  if (width > 7) | ((width = 7) & (index_size = 16))
+    err 'natural value too large for index size'
+  end if
+  if (cst >= 1 shl (index_size - 4 - (width*2)))
+    err 'constant and natural values too large for index size'
+  end if
+
+  di (index_size/16), sign shl (index_size-1) + width shl (index_size-4) + cst shl (width*nbits) + nat
 end macro
 
 macro ebc.move_immediate mov_width, imm_width, op1_full, op2
@@ -92,15 +98,9 @@ macro ebc.move_immediate mov_width, imm_width, op1_full, op2
   end match
   db op1_index shl 6 + mov_width shl 4 + op1_indirect shl 3 + op1_reg_num
   if (op1_nat <> 0) | (op1_cst <> 0)
-    ebc.compute_index 16, op1_nat, op1_cst
+    ebc.insert_index 16, op1_nat, op1_cst
   end if
-  match =3?, imm_width
-    dq op2
-  else match =2?, imm_width
-    dd op2
-  else match =1?, imm_width
-    dw op2
-  end match
+  di imm_width, op2
 end macro
 
 macro ebc.move_general opcode, op1, op2
