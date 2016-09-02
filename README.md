@@ -1,7 +1,7 @@
 fasmg-ebc - EBC (EFI Byte Code) assembler for fasmg
 ===================================================
 
-_Because programing in assembler for UEFI is easy and nobody should have to
+_Because programming in assembler for UEFI is easy and nobody should have to
 [pay](https://software.intel.com/en-us/articles/intel-c-compiler-for-efi-byte-code-purchase)
 to produce EBC executables..._
 
@@ -16,11 +16,9 @@ to produce EBC executables..._
 ## Instructions and Syntax
 
 * See Chapter 21 (_EFI Byte Code Virtual Machine_) of the [UEFI Specifications](http://www.uefi.org/sites/default/files/resources/UEFI%20Spec%202_6.pdf).
-* The specs syntax was altered as follows, to accomodate for fasmg limitations:
-  * `@Rx` &rarr; `[Rx]`  
-    e.g. `ADD32 R1, @R2` &rarr; `ADD32 R1, [R2]`
-  * `@Rx (+n,+c)` &rarr; `[Rx] (+n:+c)`  
-    e.g. `ADD32 R1, @R2 (+1,+8)` &rarr; `ADD32 R1, [R2] (+1:+8)`
+* The specs syntax was altered as follows:
+  * `@Rx (+n,+c)` &rarr; `@Rx (+n:+c)`  
+    e.g. `ADD32 R1, @R2 (+1,+8)` &rarr; `ADD32 R1, @R2 (+1:+8)`
 
 ## Assembly and testing (on Windows)
 

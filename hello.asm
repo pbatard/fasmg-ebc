@@ -10,13 +10,16 @@ include 'format.inc'
 format peebc dll efi
 entry efi_main
 
+; Define a custom EFI error to test successful memory access
+EFI_ACCESSED = EFIERR or 0xACCE55ED
+
 section '.text' code executable readable
 efi_main:
   MOVIqq R7, EFI_UNSUPPORTED
   MOVIqq R1, TestData
-  MOVIqq [R1] (-1:-8), EFI_NOT_READY
+  MOVIqq @R1 (-1:-8), EFI_ACCESSED
   MOVIqq R1, Indexed
-  MOVqq R7, [R1]
+  MOVqq R7, @R1
   RET
 
 section '.data' data readable writeable

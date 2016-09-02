@@ -20,12 +20,19 @@ element R
 
 repeat 8 i:0
   element R#i? : R + i
+  element @R#i? : R + i + 0x80
 end repeat
 
-macro ebc.parse_register reg_num, Rn
+macro ebc.parse_register reg_num, indirect, Rn
   local value
   value = +Rn
   reg_num = value metadata 1 - R
+  if (reg_num >= 0x80)
+    reg_num = reg_num - 0x80
+    indirect = 1
+  else
+    indirect = 0
+  end if
 end macro
 
 macro di width, val
@@ -47,13 +54,11 @@ macro ebc.insert_index index_size, nat, cst
   if ((cst < 0) & (nat > 0)) | ((cst > 0) & (nat < 0))
      err 'constant and natural values must have the same sign'
   end if
-
   if (cst < 0)
     sign = 1
     cst = -cst
     nat = -nat
   end if
-
   width = 8
   if (nat = 0)
     width = 0
@@ -71,7 +76,6 @@ macro ebc.insert_index index_size, nat, cst
   if (cst >= 1 shl (index_size - 4 - (width*2)))
     err 'constant and natural values too large for index size'
   end if
-
   di (index_size/16), sign shl (index_size-1) + width shl (index_size-4) + cst shl (width*nbits) + nat
 end macro
 
@@ -89,13 +93,7 @@ macro ebc.move_immediate mov_width, imm_width, op1_full, op2
     op1_index = 0
     define op1 op1_full
   end match
-  match [reg], op1
-    ebc.parse_register op1_reg_num, reg
-    op1_indirect = 1
-  else
-    ebc.parse_register op1_reg_num, op1
-    op1_indirect = 0
-  end match
+  ebc.parse_register op1_reg_num, op1_indirect, op1
   db op1_index shl 6 + mov_width shl 4 + op1_indirect shl 3 + op1_reg_num
   if (op1_nat <> 0) | (op1_cst <> 0)
     ebc.insert_index 16, op1_nat, op1_cst
@@ -108,20 +106,8 @@ macro ebc.move_general opcode, op1, op2
   ; TODO: add index for op1 & op2
   db opcode
   local int_val
-  match [reg], op1
-    ebc.parse_register op1_reg_num, reg
-    op1_indirect = 1
-  else
-    ebc.parse_register op1_reg_num, op1
-    op1_indirect = 0
-  end match
-  match [reg], op2
-    ebc.parse_register op2_reg_num, reg
-    op2_indirect = 1
-  else
-    ebc.parse_register op2_reg_num, op2
-    op2_indirect = 0
-  end match
+  ebc.parse_register op1_reg_num, op1_indirect, op1
+  ebc.parse_register op2_reg_num, op2_indirect, op2
   db op2_indirect shl 7 + op2_reg_num shl 4 + op1_indirect shl 3 + op1_reg_num
 end macro
 
