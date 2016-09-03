@@ -23,6 +23,10 @@ repeat 8 i:0
   element @R#i? : R + i + 0x80
 end repeat
 
+;
+; Supporting macros
+;
+
 macro ebc.parse_register reg_num, indirect, Rn
   local value
   value = +Rn
@@ -185,52 +189,132 @@ macro ebc.move_general opcode, ops&
   end if
 end macro
 
-macro MOVIbw? ops&
-  ebc.move_immediate 0, 1, ops
+macro ebc.math_general opcode, ops&
+  local op1, op2, op1_reg_num, op2_reg_num, op1_indirect, op2_indirect
+  local op2_index, op2_nat, op2_cst, op2_imm
+  op2_nat = 0
+  op2_cst = 0
+  op2_imm = 0
+  is_64 = 0
+  match _op1 =, _op2 (n2 =, c2), ops
+    op2_index = 1
+    define op1 _op1
+    define op2 _op2
+    op2_nat = n2
+    op2_cst = c2
+  else match _op1 =, _op2 _imm, ops
+    op2_index = 3
+    define op1 _op1
+    define op2 _op2
+    op2_imm = _imm
+  else match _op1 =, _op2, ops
+    op2_index = 0
+    define op1 _op1
+    define op2 _op2
+  else
+    err 'syntax error'
+  end match
+
+  ebc.parse_register op1_reg_num, op1_indirect, op1
+  ebc.parse_register op2_reg_num, op2_indirect, op2
+  if (op2_index = 1) & (op2_indirect <> 1)
+    err 'index specified for direct register operation'
+  end if
+  if (op2_nat = 0) & (op2_cst = 0) & (op2_imm = 0)
+    op2_index = 0
+  end if
+
+  db (op2_index and 1) shl 7 + opcode
+  db op2_indirect shl 7 + op2_reg_num shl 4 + op1_indirect shl 3 + op1_reg_num
+  if (op2_index = 1)
+    ebc.insert_index 16, op2_nat, op2_cst
+  else if (op2_index = 3)
+    dw op2_imm
+  end if
 end macro
 
-macro MOVIbd? ops&
-  ebc.move_immediate 0, 2, ops
+;
+; Instruction list
+;
+
+macro ADD32? ops&
+  ebc.math_general 0x0C, ops
 end macro
 
-macro MOVIbq? ops&
-  ebc.move_immediate 0, 3, ops
+macro ADD64? ops&
+  ebc.math_general 0x4C, ops
 end macro
 
-macro MOVIww? ops&
-  ebc.move_immediate 1, 1, ops
+macro AND32? ops&
+  ebc.math_general 0x14, ops
 end macro
 
-macro MOVIwd? ops&
-  ebc.move_immediate 1, 2, ops
+macro AND64? ops&
+  ebc.math_general 0x54, ops
 end macro
 
-macro MOVIwq? ops&
-  ebc.move_immediate 1, 3, ops
+macro ASHR32? ops&
+  ebc.math_general 0x19, ops
 end macro
 
-macro MOVIdw? ops&
-  ebc.move_immediate 2, 1, ops
+macro ASHR64? ops&
+  ebc.math_general 0x59, ops
 end macro
 
-macro MOVIdd? ops&
-  ebc.move_immediate 2, 2, ops
+macro DIV32? ops&
+  ebc.math_general 0x10, ops
 end macro
 
-macro MOVIdq? ops&
-  ebc.move_immediate 2, 3, ops
+macro DIV64? ops&
+  ebc.math_general 0x50, ops
 end macro
 
-macro MOVIqw? ops&
-  ebc.move_immediate 3, 1, ops
+macro DIVU32? ops&
+  ebc.math_general 0x11, ops
 end macro
 
-macro MOVIqd? ops&
-  ebc.move_immediate 3, 2, ops
+macro DIVU64? ops&
+  ebc.math_general 0x51, ops
 end macro
 
-macro MOVIqq? ops&
-  ebc.move_immediate 3, 3, ops
+macro EXTNDB32? ops&
+  ebc.math_general 0x1A, ops
+end macro
+
+macro EXTNDB64? ops&
+  ebc.math_general 0x5A, ops
+end macro
+
+macro EXTNDD32? ops&
+  ebc.math_general 0x1C, ops
+end macro
+
+macro EXTNDD64? ops&
+  ebc.math_general 0x5C, ops
+end macro
+
+macro EXTNDW32? ops&
+  ebc.math_general 0x1B, ops
+end macro
+
+macro EXTNDW64? ops&
+  ebc.math_general 0x5B, ops
+end macro
+
+macro MOD32? ops&
+  ebc.math_general 0x12, ops
+end macro
+
+macro MOD64? ops&
+  ebc.math_general 0x52, ops
+end macro
+
+macro MODU32? ops&
+  ebc.math_general 0x13, ops
+end macro
+
+macro MODU64? ops&
+  ebc.math_general 0x53, ops
 end macro
 
 macro MOVbw? ops&
@@ -285,6 +369,126 @@ macro MOVqq? ops&
   ebc.move_general 0x28, ops
 end macro
 
+macro MOVIbw? ops&
+  ebc.move_immediate 0, 1, ops
+end macro
+
+macro MOVIbd? ops&
+  ebc.move_immediate 0, 2, ops
+end macro
+
+macro MOVIbq? ops&
+  ebc.move_immediate 0, 3, ops
+end macro
+
+macro MOVIww? ops&
+  ebc.move_immediate 1, 1, ops
+end macro
+
+macro MOVIwd? ops&
+  ebc.move_immediate 1, 2, ops
+end macro
+
+macro MOVIwq? ops&
+  ebc.move_immediate 1, 3, ops
+end macro
+
+macro MOVIdw? ops&
+  ebc.move_immediate 2, 1, ops
+end macro
+
+macro MOVIdd? ops&
+  ebc.move_immediate 2, 2, ops
+end macro
+
+macro MOVIdq? ops&
+  ebc.move_immediate 2, 3, ops
+end macro
+
+macro MOVIqw? ops&
+  ebc.move_immediate 3, 1, ops
+end macro
+
+macro MOVIqd? ops&
+  ebc.move_immediate 3, 2, ops
+end macro
+
+macro MOVIqq? ops&
+  ebc.move_immediate 3, 3, ops
+end macro
+
+macro MUL32? ops&
+  ebc.math_general 0x0E, ops
+end macro
+
+macro MUL64? ops&
+  ebc.math_general 0x4E, ops
+end macro
+
+macro MULU32? ops&
+  ebc.math_general 0x0F, ops
+end macro
+
+macro MULU64? ops&
+  ebc.math_general 0x4F, ops
+end macro
+
+macro NEG32? ops&
+  ebc.math_general 0x0B, ops
+end macro
+
+macro NEG64? ops&
+  ebc.math_general 0x4B, ops
+end macro
+
+macro NOT32? ops&
+  ebc.math_general 0x0A, ops
+end macro
+
+macro NOT64? ops&
+  ebc.math_general 0x4A, ops
+end macro
+
+macro OR32? ops&
+  ebc.math_general 0x15, ops
+end macro
+
+macro OR64? ops&
+  ebc.math_general 0x55, ops
+end macro
+
 macro RET?
   dw 0x0004
+end macro
+
+macro SHL32? ops&
+  ebc.math_general 0x17, ops
+end macro
+
+macro SHL64? ops&
+  ebc.math_general 0x57, ops
+end macro
+
+macro SHR32? ops&
+  ebc.math_general 0x18, ops
+end macro
+
+macro SHR64? ops&
+  ebc.math_general 0x58, ops
+end macro
+
+macro SUB32? ops&
+  ebc.math_general 0x0D, ops
+end macro
+
+macro SUB64? ops&
+  ebc.math_general 0x4D, ops
+end macro
+
+macro XOR32? ops&
+  ebc.math_general 0x16, ops
+end macro
+
+macro XOR64? ops&
+  ebc.math_general 0x56, ops
 end macro

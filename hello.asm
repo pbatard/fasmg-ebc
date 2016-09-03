@@ -21,12 +21,17 @@ efi_main:
   MOVIqq R2, Indexed
   MOVqq @R2 (+1, +8), @R1 (-1, -8)
   MOVq R3, R1
-  MOVqq R7, @R3
+  MOVq R7, @R3
+  MOVIqq R6, 0x10
+  ADD64 R7, R6 1
+  SUB64 R7, R6
+  XOR64 R7, @R3 (+1, 0)
   RET
 
 section '.data' data readable writeable
   Indexed:  dq EFI_NOT_FOUND
             dq EFI_NOT_FOUND
   TestData: dq EFI_NOT_FOUND
+            dq 3
 
 section '.reloc' fixups data discardable
