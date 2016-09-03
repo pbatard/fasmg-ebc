@@ -13,12 +13,9 @@ to produce EBC executables..._
   (NB: You can find QEMU Windows binaries [here](https://qemu.weilnetz.de/w64/))
 * git
 
-## Instructions and Syntax
+## Instructions and syntax
 
-* See Chapter 21 (_EFI Byte Code Virtual Machine_) of the [UEFI Specifications](http://www.uefi.org/sites/default/files/resources/UEFI%20Spec%202_6.pdf).
-* The specs syntax was altered as follows:
-  * `@Rx (+n,+c)` &rarr; `@Rx (+n:+c)`  
-    e.g. `ADD32 R1, @R2 (+1,+8)` &rarr; `ADD32 R1, @R2 (+1:+8)`
+See Chapter 21 (_EFI Byte Code Virtual Machine_) of the [UEFI Specifications](http://www.uefi.org/sites/default/files/resources/UEFI%20Spec%202_6.pdf).
 
 ## Assembly and testing (on Windows)
 

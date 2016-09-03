@@ -17,7 +17,7 @@ section '.text' code executable readable
 efi_main:
   MOVIqq R7, EFI_UNSUPPORTED
   MOVIqq R1, TestData
-  MOVIqq @R1 (-1:-8), EFI_ACCESSED
+  MOVIqq @R1 (-1, -8), EFI_ACCESSED
   MOVIqq R1, Indexed
   MOVqq R7, @R1
   RET
