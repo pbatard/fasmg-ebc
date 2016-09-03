@@ -18,8 +18,10 @@ efi_main:
   MOVIqq R7, EFI_UNSUPPORTED
   MOVIqq R1, TestData
   MOVIqq @R1 (-1, -8), EFI_ACCESSED
-  MOVIqq R1, Indexed
-  MOVqq R7, @R1
+  MOVIqq R2, Indexed
+  MOVqq @R2 (+1, +8), @R1 (-1, -8)
+  MOVq R3, R1
+  MOVqq R7, @R3
   RET
 
 section '.data' data readable writeable
