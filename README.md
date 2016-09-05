@@ -11,6 +11,7 @@ to produce EBC executables..._
   to download the 'g' version)
 * [QEMU](http://www.qemu.org) __v2.5 or later__ and [OVMF](http://www.tianocore.org/ovmf/) for testing
   (NB: You can find QEMU Windows binaries [here](https://qemu.weilnetz.de/w64/))
+* UEFI.org's [EBC Debugger](http://www.uefi.org/node/550) for syntax debugging and validation
 * git
 
 ## Instructions and syntax
@@ -23,4 +24,5 @@ See Chapter 21 (_EFI Byte Code Virtual Machine_) of the [UEFI Specifications](ht
 * Run `make`
 * Additionally, if you have Qemu installed, you can extract the [latest x64 OVMF](http://www.tianocore.org/ovmf/)
   into the root directory, and run `make qemu`.
-  Note you may have to edit `make.cmd` to set your qemu directory.
+* Also, if you have extracted the EBC Debugger into the root directory, you can add your own assembly
+  statements into `debug.asm` and run `make debug` to validate the encoded instructions.

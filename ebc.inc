@@ -154,7 +154,7 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
 end macro
 
 macro ebc.move_general opcode, ops&
-  local op1, op2, op1_reg_num, op2_reg_num, op1_indirect, op2_indirect
+  local op1, op2, op1_reg_num, op2_reg_num, op1_indirect, op2_indirect, op2_imm
   local op1_index, op2_index, op1_nat, op2_nat, op1_cst, op2_cst, index_size
   op1_index = 0
   op2_index = 0
@@ -162,6 +162,7 @@ macro ebc.move_general opcode, ops&
   op2_nat = 0
   op1_cst = 0
   op2_cst = 0
+  op2_imm = 0
   match _op1 (n1 =, c1) =, _op2 (n2 =, c2), ops
     op1_index = 1
     op1_nat = n1
@@ -171,6 +172,17 @@ macro ebc.move_general opcode, ops&
     op2_cst = c2
     define op1 _op1
     define op2 _op2
+  else match _op1 (n1 =, c1) =, _op2 _imm, ops
+    if (opcode <> 0x25) & (opcode <> 0x26)
+      err 'syntax error'
+    end if
+    op1_index = 1
+    op1_nat = n1
+    op1_cst = c1
+    op2_index = 3
+    define op1 _op1
+    define op2 _op2
+    op2_imm = _imm
   else match _op1 (n1 =, c1) =, _op2, ops
     op1_index = 1
     op1_nat = n1
@@ -183,6 +195,14 @@ macro ebc.move_general opcode, ops&
     op2_cst = c2
     define op1 _op1
     define op2 _op2
+  else match _op1 =, _op2 _imm, ops
+    if (opcode <> 0x25) & (opcode <> 0x26)
+      err 'syntax error'
+    end if
+    op2_index = 3
+    define op1 _op1
+    define op2 _op2
+    op2_imm = _imm
   else match _op1 =, _op2, ops
     define op1 _op1
     define op2 _op2
@@ -194,6 +214,8 @@ macro ebc.move_general opcode, ops&
   ebc.parse_register op2_reg_num, op2_indirect, op2
   if ((op1_index = 1) & (op1_indirect <> 1)) | ((op2_index = 1) & (op2_indirect <> 1))
     err 'index specified for direct register operation'
+  else if (op2_index = 3) & (op2_indirect = 1)
+    err 'immediate value specified for indirect register operation'
   end if
   if (opcode > 0x100) & ((op1_index = 1) | (op2_index = 1))
     err 'index provided but no index size specified'
@@ -201,25 +223,27 @@ macro ebc.move_general opcode, ops&
   if (op1_nat = 0) & (op1_cst = 0)
     op1_index = 0
   end if
-  if (op2_nat = 0) & (op2_cst = 0)
+  if (op2_index = 1) & (op2_nat = 0) & (op2_cst = 0)
     op2_index = 0
   end if
 
-  db op1_index shl 7 + op2_index shl 6 + (opcode and 0xff)
+  db op1_index shl 7 + (op2_index and 1) shl 6 + (opcode and 0xff)
   db op2_indirect shl 7 + op2_reg_num shl 4 + op1_indirect shl 3 + op1_reg_num
 
   index_size = 16
-  if (opcode >= 0x21) & (opcode <= 0x24)
+  if ((opcode >= 0x21) & (opcode <= 0x24)) | (opcode = 0x26) | (opcode = 0x33)
     index_size = 32
   else if (opcode = 0x28)
     index_size = 64
   end if
 
-  if (op1_index)
+  if (op1_index = 1)
     ebc.insert_index index_size, op1_nat, op1_cst
   end if
-  if (op2_index)
+  if (op2_index = 1)
     ebc.insert_index index_size, op2_nat, op2_cst
+  else if (op2_index = 3)
+    di (opcode - 0x24), op2_imm
   end if
 end macro
 
@@ -463,6 +487,14 @@ macro MOVInq? ops&
   ebc.move_imm_ind_rel -1, 3, ops
 end macro
 
+macro MOVnw? ops&
+  ebc.move_general 0x32, ops
+end macro
+
+macro MOVnd? ops&
+  ebc.move_general 0x33, ops
+end macro
+
 macro MOVRELw? ops&
   ebc.move_imm_ind_rel -2, 1, ops
 end macro
@@ -473,6 +505,14 @@ end macro
 
 macro MOVRELq? ops&
   ebc.move_imm_ind_rel -2, 3, ops
+end macro
+
+macro MOVsnw? ops&
+  ebc.move_general 0x25, ops
+end macro
+
+macro MOVsnd? ops&
+  ebc.move_general 0x26, ops
 end macro
 
 macro MUL32? ops&
