@@ -7,16 +7,16 @@ to produce EBC executables..._
 
 ## Prerequisites
 
-* [flat assembler g (fasmg)](http://flatassembler.net/download.php) (make sure
-  to download the 'g' version)
-* [QEMU](http://www.qemu.org) __v2.5 or later__ and [OVMF](http://www.tianocore.org/ovmf/) for testing
-  (NB: You can find QEMU Windows binaries [here](https://qemu.weilnetz.de/w64/))
-* UEFI.org's [EBC Debugger](http://www.uefi.org/node/550) for syntax debugging and validation.
+* [flat assembler g (fasmg)](http://flatassembler.net/download.php).  
+  Please make sure to download the 'g' version of fasm.
+* [QEMU](http://www.qemu.org) __v2.5 or later__ and [OVMF](http://www.tianocore.org/ovmf/) for testing.  
+  NB: You can find QEMU Windows binaries [here](https://qemu.weilnetz.de/w64/).
+* UEFI.org's [EBC Debugger](http://www.uefi.org/node/550) for syntax debugging and validation.  
   Note however that __the EBC Debugger [IS](https://github.com/tianocore/edk/blob/master/Sample/Universal/Ebc/Dxe/EbcDebugger/EdbDisasmSupport.c#L191)
   [buggy](https://github.com/tianocore/edk/blob/master/Sample/Universal/Ebc/Dxe/EbcDebugger/EdbDisasmSupport.c#L228)
   when it comes to displaying 32 or 64bit indexes__, so please don't report that fasmg-ebc is not
   encoding indexes properly, when it's really the debugger that is not decoding them properly.
-* git
+* git (e.g. [TortoiseGit](https://tortoisegit.org/) for Windows).
 
 ## Instructions and syntax
 

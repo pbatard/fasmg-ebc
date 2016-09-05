@@ -11,6 +11,6 @@ entry efi_main
 
 section '.text' code executable readable
 efi_main:
-  MOVRELd @R1(+32,+32), 0x12345678
+  BREAK 6
 
 section '.data' data readable writeable

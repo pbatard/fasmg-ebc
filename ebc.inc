@@ -319,6 +319,14 @@ macro ASHR64? ops&
   ebc.math_general 0x59, ops
 end macro
 
+macro BREAK? code
+  match , code
+    break ; fasmg directive
+  else
+    db 0x00, code 
+  end match
+end macro
+
 macro DIV32? ops&
   ebc.math_general 0x10, ops
 end macro
