@@ -11,8 +11,6 @@ entry efi_main
 
 section '.text' code executable readable
 efi_main:
-  MOVsnw @R2(+1,+8), R1 1234
+  MOVRELd @R1(+32,+32), 0x12345678
 
 section '.data' data readable writeable
-
-section '.reloc' fixups data discardable

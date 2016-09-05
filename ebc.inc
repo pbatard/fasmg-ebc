@@ -101,7 +101,7 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
   op1_nat = 0
   op1_cst = 0
 
-  match _op1 (n1 =, c1) =, (n2 ,= c2), ops
+  match _op1 (n1 =, c1) =, (n2 =, c2), ops
     if (mov_width <> -1)
       err 'syntax error'
     end if
@@ -172,7 +172,7 @@ macro ebc.move_general opcode, ops&
     op2_cst = c2
     define op1 _op1
     define op2 _op2
-  else match _op1 (n1 =, c1) =, _op2 _imm, ops
+  else match _op1 (n1 =, c1) =, _op2 (_imm), ops
     if (opcode <> 0x25) & (opcode <> 0x26)
       err 'syntax error'
     end if
@@ -195,7 +195,7 @@ macro ebc.move_general opcode, ops&
     op2_cst = c2
     define op1 _op1
     define op2 _op2
-  else match _op1 =, _op2 _imm, ops
+  else match _op1 =, _op2 (_imm), ops
     if (opcode <> 0x25) & (opcode <> 0x26)
       err 'syntax error'
     end if
@@ -260,7 +260,7 @@ macro ebc.math_general opcode, ops&
     define op2 _op2
     op2_nat = n2
     op2_cst = c2
-  else match _op1 =, _op2 _imm, ops
+  else match _op1 =, _op2 (_imm), ops
     op2_index = 3
     define op1 _op1
     define op2 _op2
@@ -479,7 +479,7 @@ macro MOVInw? ops&
   ebc.move_imm_ind_rel -1, 1, ops
 end macro
 
-macro MOVInl? ops&
+macro MOVInd? ops&
   ebc.move_imm_ind_rel -1, 2, ops
 end macro
 
@@ -499,7 +499,7 @@ macro MOVRELw? ops&
   ebc.move_imm_ind_rel -2, 1, ops
 end macro
 
-macro MOVRELl? ops&
+macro MOVRELd? ops&
   ebc.move_imm_ind_rel -2, 2, ops
 end macro
 

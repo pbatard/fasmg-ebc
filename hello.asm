@@ -17,15 +17,15 @@ section '.text' code executable readable
 efi_main:
   MOVIqq R7, EFI_UNSUPPORTED
   MOVIqq R1, TestData
-  MOVIqq @R1 (-1, -8), EFI_ACCESSED
+  MOVIqq @R1(-1,-8), EFI_ACCESSED
   MOVIqq R2, Indexed
-  MOVqq @R2 (+1, +8), @R1 (-1, -8)
+  MOVqq @R2(+1,+8), @R1(-1,-8)
   MOVq R3, R1
   MOVq R7, @R3
   MOVIqq R6, 0x10
-  ADD64 R7, R6 1
+  ADD64 R7, R6(1)
   SUB64 R7, R6
-  XOR64 R7, @R3 (+1, 0)
+  XOR64 R7, @R3(+1,0)
   RET
 
 section '.data' data readable writeable
