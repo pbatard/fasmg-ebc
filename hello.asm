@@ -15,6 +15,10 @@ EFI_ACCESSED = EFIERR or 0xACCE55ED
 
 section '.text' code executable readable
 efi_main:
+  CALL32 R0(Subroutine)
+  RET
+
+Subroutine:
   MOVIqq R7, EFI_UNSUPPORTED
   MOVIqq R1, TestData
   MOVIqq @R1(-1,-8), EFI_ACCESSED

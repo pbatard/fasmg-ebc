@@ -18,3 +18,5 @@ sub:
   RET
 
 section '.data' data readable writeable
+
+section '.reloc' fixups data discardable

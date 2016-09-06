@@ -27,18 +27,6 @@ end repeat
 ; Supporting macros
 ;
 
-macro ebc.parse_register reg_num, indirect, Rn
-  local value
-  value = +Rn
-  reg_num = value metadata 1 - R
-  if (reg_num >= 0x80)
-    reg_num = reg_num - 0x80
-    indirect = 1
-  else
-    indirect = 0
-  end if
-end macro
-
 macro di width, val
   if (width = 0)
     db val
@@ -48,6 +36,28 @@ macro di width, val
     dd val
   else
     dq val
+  end if
+end macro
+
+macro is_reloc rel, value
+    local v
+    v = value
+    if (~ v relativeto 0) | (v relativeto PE.RELOCATION)
+      rel = 1
+    else
+      rel = 0
+    end if
+end macro
+
+macro ebc.parse_register reg_num, indirect, Rn
+  local value
+  value = +Rn
+  reg_num = value metadata 1 - R
+  if (reg_num >= 0x80)
+    reg_num = reg_num - 0x80
+    indirect = 1
+  else
+    indirect = 0
   end if
 end macro
 
@@ -249,7 +259,7 @@ end macro
 
 macro ebc.math_general opcode, ops&
   local op1, op2, op1_reg_num, op2_reg_num, op1_indirect, op2_indirect
-  local op2_index, op2_nat, op2_cst, op2_imm
+  local op2_index, op2_nat, op2_cst, op2_imm, op2_imm_reloc
   op2_nat = 0
   op2_cst = 0
   op2_imm = 0
@@ -280,8 +290,9 @@ macro ebc.math_general opcode, ops&
   end if
   if (op2_index = 3) & (op2_indirect = 1)
     err 'immediate value specified for indirect register operation'
-  end if  
-  if (op2_nat = 0) & (op2_cst = 0) & (op2_imm = 0)
+  end if
+  is_reloc op2_imm_reloc, op2_imm
+  if (~op2_imm_reloc) & (op2_nat = 0) & (op2_cst = 0) & (op2_imm = 0)
     op2_index = 0
   end if
 
@@ -295,7 +306,7 @@ macro ebc.math_general opcode, ops&
 end macro
 
 macro ebc.jmp_call_push_pop opcode, flags, ops&
-  local op1, op1_reg_num, op1_indirect, op1_index, op1_nat, op1_cst, op1_imm, index_size
+  local op1, op1_reg_num, op1_indirect, op1_index, op1_nat, op1_cst, op1_imm, op1_imm_reloc, index_size
   op1_nat = 0
   op1_cst = 0
   op1_imm = 0
@@ -327,7 +338,8 @@ macro ebc.jmp_call_push_pop opcode, flags, ops&
       define op1 ops
     end match
     ebc.parse_register op1_reg_num, op1_indirect, op1
-    if (op1_nat = 0) & (op1_cst = 0) & (op1_imm = 0)
+    is_reloc op1_imm_reloc, op1_imm
+    if (~op1_imm_reloc) & (op1_nat = 0) & (op1_cst = 0) & (op1_imm = 0)
       op1_index = 0
     end if
     if (op1_index = 1) & (op1_indirect <> 1)
@@ -381,7 +393,7 @@ macro BREAK? code
   match , code
     break ; fasmg directive
   else
-    db 0x00, code 
+    db 0x00, code
   end match
 end macro
 
