@@ -278,6 +278,9 @@ macro ebc.math_general opcode, ops&
   if (op2_index = 1) & (op2_indirect <> 1)
     err 'index specified for direct register operation'
   end if
+  if (op2_index = 3) & (op2_indirect = 1)
+    err 'immediate value specified for indirect register operation'
+  end if  
   if (op2_nat = 0) & (op2_cst = 0) & (op2_imm = 0)
     op2_index = 0
   end if
@@ -291,9 +294,64 @@ macro ebc.math_general opcode, ops&
   end if
 end macro
 
+macro ebc.jmp_call_push_pop opcode, flags, ops&
+  local op1, op1_reg_num, op1_indirect, op1_index, op1_nat, op1_cst, op1_imm, index_size
+  op1_nat = 0
+  op1_cst = 0
+  op1_imm = 0
+  if (flags < 0x80) & (opcode and 0x40)
+    index_size = 64
+    op1_index = 3
+    op1_reg_num = 0
+    op1_indirect = 0
+    op1_imm = ops
+  else
+    if (flags >= 0x80)
+      index_size = 16
+    else
+      index_size = 32
+    end if
+    match _op1 (n1 =, c1), ops
+      op1_index = 1
+      define op1 _op1
+      define op2 _op2
+      op1_nat = n1
+      op1_cst = c1
+    else match _op1 (_imm), ops
+      op1_index = 3
+      define op1 _op1
+      define op2 _op2
+      op1_imm = _imm
+    else
+      op1_index = 0
+      define op1 ops
+    end match
+    ebc.parse_register op1_reg_num, op1_indirect, op1
+    if (op1_nat = 0) & (op1_cst = 0) & (op1_imm = 0)
+      op1_index = 0
+    end if
+    if (op1_index = 1) & (op1_indirect <> 1)
+      err 'index specified for direct register operation'
+    end if
+    if (op1_index = 3) & (op1_indirect = 1)
+      err 'immediate value specified for indirect register operation'
+    end if
+  end if
+
+  db (op1_index and 1) shl 7 + opcode
+  db (flags and 0x0F) shl 4 + op1_indirect shl 3 + op1_reg_num
+  if (op1_index = 1)
+    ebc.insert_index index_size, op1_nat, op1_cst
+  else if (op1_index = 3)
+    di (index_size/16), op1_imm
+  end if
+end macro
+
 ;
 ; Instruction list
 ;
+
+; TODO: CMP, CMPI, LOADSP, STORESP
 
 macro ADD32? ops&
   ebc.math_general 0x0C, ops
@@ -325,6 +383,39 @@ macro BREAK? code
   else
     db 0x00, code 
   end match
+end macro
+
+macro CALL32? ops&
+  ebc.jmp_call_push_pop 0x03, 0000b, ops
+end macro
+
+macro CALL32a? ops&
+  ebc.jmp_call_push_pop 0x03, 0001b, ops
+end macro
+
+; NB: As per the specs, CALL[EX]64 is always absolute
+macro CALL64? ops&
+  ebc.jmp_call_push_pop 0x43, 0000b, ops
+end macro
+
+macro CALL64a? ops&
+  ebc.jmp_call_push_pop 0x43, 0000b, ops
+end macro
+
+macro CALLEX32? ops&
+  ebc.jmp_call_push_pop 0x03, 0010b, ops
+end macro
+
+macro CALLEX32a? ops&
+  ebc.jmp_call_push_pop 0x03, 0011b, ops
+end macro
+
+macro CALLEX64? ops&
+  ebc.jmp_call_push_pop 0x43, 0010b, ops
+end macro
+
+macro CALLEX64a? ops&
+  ebc.jmp_call_push_pop 0x43, 0010b, ops
 end macro
 
 macro DIV32? ops&
@@ -365,6 +456,66 @@ end macro
 
 macro EXTNDW64? ops&
   ebc.math_general 0x5B, ops
+end macro
+
+macro JMP8? imm
+  db 0x02, imm
+end macro
+
+macro JMP8cc? imm
+  db 0x82, imm
+end macro
+
+macro JMP8cs? imm
+  db 0xC2, imm
+end macro
+
+macro JMP32? ops&
+  ebc.jmp_call_push_pop 0x01, 0001b, ops
+end macro
+
+macro JMP32a? ops&
+  ebc.jmp_call_push_pop 0x01, 0000b, ops
+end macro
+
+macro JMP32cs? ops&
+  ebc.jmp_call_push_pop 0x01, 1101b, ops
+end macro
+
+macro JMP32csa? ops&
+  ebc.jmp_call_push_pop 0x01, 1100b, ops
+end macro
+
+macro JMP32cc? ops&
+  ebc.jmp_call_push_pop 0x01, 1001b, ops
+end macro
+
+macro JMP32cca? ops&
+  ebc.jmp_call_push_pop 0x01, 1000b, ops
+end macro
+
+macro JMP64? ops&
+  ebc.jmp_call_push_pop 0x41, 0001b, ops
+end macro
+
+macro JMP64a? ops&
+  ebc.jmp_call_push_pop 0x41, 0000b, ops
+end macro
+
+macro JMP64cs? ops&
+  ebc.jmp_call_push_pop 0x41, 1101b, ops
+end macro
+
+macro JMP64csa? ops&
+  ebc.jmp_call_push_pop 0x41, 1100b, ops
+end macro
+
+macro JMP64cc? ops&
+  ebc.jmp_call_push_pop 0x41, 1001b, ops
+end macro
+
+macro JMP64cca? ops&
+  ebc.jmp_call_push_pop 0x41, 1000b, ops
 end macro
 
 macro MOD32? ops&
@@ -561,6 +712,30 @@ end macro
 
 macro OR64? ops&
   ebc.math_general 0x55, ops
+end macro
+
+macro POP32? ops&
+  ebc.jmp_call_push_pop 0x2C, 0x80, ops
+end macro
+
+macro POP64? ops&
+  ebc.jmp_call_push_pop 0x6C, 0x80, ops
+end macro
+
+macro POPn? ops&
+  ebc.jmp_call_push_pop 0x36, 0x80, ops
+end macro
+
+macro PUSH32? ops&
+  ebc.jmp_call_push_pop 0x2B, 0x80, ops
+end macro
+
+macro PUSH64? ops&
+  ebc.jmp_call_push_pop 0x6B, 0x80, ops
+end macro
+
+macro PUSHn? ops&
+  ebc.jmp_call_push_pop 0x35, 0x80, ops
 end macro
 
 macro RET?
