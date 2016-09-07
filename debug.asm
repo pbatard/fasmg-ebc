@@ -7,11 +7,14 @@ include 'efi.inc'
 include 'format.inc'
 
 format peebc dll efi
-entry efi_main
+entry EfiMain
 
 section '.text' code executable readable
-efi_main:
-  STORESP R1, [IP]
+EfiMain:
+  CALL TestSub
+  CALL @R1
+TestSub:
+  RET
 
 section '.data' data readable writeable
 

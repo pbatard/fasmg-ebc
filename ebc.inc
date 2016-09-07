@@ -42,14 +42,31 @@ macro di width, val
   end if
 end macro
 
-macro is_reloc rel, value
+macro is_reloc ret, value
   local v
   v = value
   if (~ v relativeto 0) | (v relativeto PE.RELOCATION)
-    rel = 1
+    ret = 1
   else
-    rel = 0
+    ret = 0
   end if
+end macro
+
+macro is_immediate ret, ops&
+  local val, is_rel
+  match a =, b =, c, ops
+    ret = 0
+  else match a =, b, ops
+    ret = 0
+  else match v, ops
+     if (v relativeto 0) | (v relativeto PE.RELOCATION)
+       ret = 1
+     else
+       ret = 0
+     end if
+  else
+    ret = 0
+  end match
 end macro
 
 macro ebc.parse_register reg_num, indirect_or_vm, reg
@@ -240,6 +257,7 @@ macro ebc.move_general opcode, ops&
     err 'immediate value specified for indirect register operation'
   end if
   if (opcode > 0x100) & ((op1_index = 1) | (op2_index = 1))
+    ; TODO: would be nicer to compute the required size ourselves
     err 'index provided but no index size specified'
   end if
   if (op1_nat = 0) & (op1_cst = 0)
@@ -320,12 +338,16 @@ macro ebc.math_general opcode, ops&
 end macro
 
 macro ebc.jmp_call_push_pop opcode, opcode_flags, ops&
-  local op1, op1_reg_num, op1_indirect, op1_index, op1_nat, op1_cst, op1_imm, op1_imm_reloc, index_size
+  local op1, op1_reg_num, op1_indirect, op1_index, op1_nat, op1_cst
+  local op1_imm, op1_imm_reloc, index_size, _opcode, is_op1_imm
   op1_nat = 0
   op1_cst = 0
   op1_imm = 0
+  _opcode = opcode and 0xff
+  is_immediate is_op1_imm, ops
 
-  if (opcode_flags < 0x80) & (opcode and 0x40)
+  if ((opcode_flags < 0x80) & (opcode and 0x40)) | ((opcode >= 0x100) & (is_op1_imm))
+    _opcode = _opcode or 0x40
     index_size = 64
     op1_index = 3
     op1_reg_num = 0
@@ -369,7 +391,7 @@ macro ebc.jmp_call_push_pop opcode, opcode_flags, ops&
     end if
   end if
 
-  db (op1_index and 1) shl 7 + opcode
+  db (op1_index and 1) shl 7 + _opcode
   db (opcode_flags and 0x0F) shl 4 + op1_indirect shl 3 + op1_reg_num
   if (op1_index = 1)
     ebc.insert_index index_size, op1_nat, op1_cst
@@ -469,6 +491,10 @@ end macro
 ; Instruction list
 ;
 
+macro ADD? ops&
+  ebc.math_general 0x4C, ops
+end macro
+
 macro ADD32? ops&
   ebc.math_general 0x0C, ops
 end macro
@@ -477,12 +503,20 @@ macro ADD64? ops&
   ebc.math_general 0x4C, ops
 end macro
 
+macro AND? ops&
+  ebc.math_general 0x54, ops
+end macro
+
 macro AND32? ops&
   ebc.math_general 0x14, ops
 end macro
 
 macro AND64? ops&
   ebc.math_general 0x54, ops
+end macro
+
+macro ASHR? ops&
+  ebc.math_general 0x59, ops
 end macro
 
 macro ASHR32? ops&
@@ -499,6 +533,10 @@ macro BREAK? code
   else
     db 0x00, code
   end match
+end macro
+
+macro CALL? ops&
+  ebc.jmp_call_push_pop 0x103, 0000b, ops
 end macro
 
 macro CALL32? ops&
@@ -518,7 +556,15 @@ macro CALL64a? ops&
   ebc.jmp_call_push_pop 0x43, 0000b, ops
 end macro
 
+macro CALLEX? ops&
+  ebc.jmp_call_push_pop 0x103, 0010b, ops
+end macro
+
 macro CALLEX32? ops&
+  ebc.jmp_call_push_pop 0x03, 0010b, ops
+end macro
+
+macro CALL32EX? ops&
   ebc.jmp_call_push_pop 0x03, 0010b, ops
 end macro
 
@@ -526,12 +572,28 @@ macro CALLEX32a? ops&
   ebc.jmp_call_push_pop 0x03, 0011b, ops
 end macro
 
+macro CALL32EXa? ops&
+  ebc.jmp_call_push_pop 0x03, 0011b, ops
+end macro
+
 macro CALLEX64? ops&
+  ebc.jmp_call_push_pop 0x43, 0010b, ops
+end macro
+
+macro CALL64EX? ops&
   ebc.jmp_call_push_pop 0x43, 0010b, ops
 end macro
 
 macro CALLEX64a? ops&
   ebc.jmp_call_push_pop 0x43, 0010b, ops
+end macro
+
+macro CALL64EXa? ops&
+  ebc.jmp_call_push_pop 0x43, 0010b, ops
+end macro
+
+macro CMPeq? ops&
+  ebc.math_general 0x45, ops
 end macro
 
 macro CMP32eq? ops&
@@ -542,12 +604,20 @@ macro CMP64eq? ops&
   ebc.math_general 0x45, ops
 end macro
 
+macro CMPlte? ops&
+  ebc.math_general 0x46, ops
+end macro
+
 macro CMP32lte? ops&
   ebc.math_general 0x06, ops
 end macro
 
 macro CMP64lte? ops&
   ebc.math_general 0x46, ops
+end macro
+
+macro CMPgte? ops&
+  ebc.math_general 0x47, ops
 end macro
 
 macro CMP32gte? ops&
@@ -558,6 +628,10 @@ macro CMP64gte? ops&
   ebc.math_general 0x47, ops
 end macro
 
+macro CMPulte? ops&
+  ebc.math_general 0x48, ops
+end macro
+
 macro CMP32ulte? ops&
   ebc.math_general 0x08, ops
 end macro
@@ -566,12 +640,28 @@ macro CMP64ulte? ops&
   ebc.math_general 0x48, ops
 end macro
 
+macro CMPugte? ops&
+  ebc.math_general 0x49, ops
+end macro
+
 macro CMP32ugte? ops&
   ebc.math_general 0x09, ops
 end macro
 
 macro CMP64ugte? ops&
   ebc.math_general 0x49, ops
+end macro
+
+macro CMPIeq? ops&
+  ebc.cmp_immediate 0x6D, -1, ops
+end macro
+
+macro CMPIweq? ops&
+  ebc.cmp_immediate 0x6D, 0, ops
+end macro
+
+macro CMPIdeq? ops&
+  ebc.cmp_immediate 0x6D, 1, ops
 end macro
 
 macro CMPI32eq? ops&
@@ -598,6 +688,18 @@ macro CMPI64deq? ops&
   ebc.cmp_immediate 0x6D, 1, ops
 end macro
 
+macro CMPIlte? ops&
+  ebc.cmp_immediate 0x6E, -1, ops
+end macro
+
+macro CMPIwlte? ops&
+  ebc.cmp_immediate 0x6E, 0, ops
+end macro
+
+macro CMPIdlte? ops&
+  ebc.cmp_immediate 0x6E, 1, ops
+end macro
+
 macro CMPI32lte? ops&
   ebc.cmp_immediate 0x2E, -1, ops
 end macro
@@ -620,6 +722,18 @@ end macro
 
 macro CMPI64dlte? ops&
   ebc.cmp_immediate 0x6E, 1, ops
+end macro
+
+macro CMPIgte? ops&
+  ebc.cmp_immediate 0x6F, -1, ops
+end macro
+
+macro CMPIwgte? ops&
+  ebc.cmp_immediate 0x6F, 0, ops
+end macro
+
+macro CMPIdgte? ops&
+  ebc.cmp_immediate 0x6F, 1, ops
 end macro
 
 macro CMPI32gte? ops&
@@ -646,6 +760,18 @@ macro CMPI64dgte? ops&
   ebc.cmp_immediate 0x6F, 1, ops
 end macro
 
+macro CMPIulte? ops&
+  ebc.cmp_immediate 0x70, -1, ops
+end macro
+
+macro CMPIwulte? ops&
+  ebc.cmp_immediate 0x70, 0, ops
+end macro
+
+macro CMPIdulte? ops&
+  ebc.cmp_immediate 0x70, 1, ops
+end macro
+
 macro CMPI32ulte? ops&
   ebc.cmp_immediate 0x30, -1, ops
 end macro
@@ -668,6 +794,18 @@ end macro
 
 macro CMPI64dulte? ops&
   ebc.cmp_immediate 0x70, 1, ops
+end macro
+
+macro CMPIugte? ops&
+  ebc.cmp_immediate 0x71, -1, ops
+end macro
+
+macro CMPIwugte? ops&
+  ebc.cmp_immediate 0x71, 0, ops
+end macro
+
+macro CMPIdugte? ops&
+  ebc.cmp_immediate 0x71, 1, ops
 end macro
 
 macro CMPI32ugte? ops&
@@ -694,12 +832,20 @@ macro CMPI64dugte? ops&
   ebc.cmp_immediate 0x71, 1, ops
 end macro
 
+macro DIV? ops&
+  ebc.math_general 0x50, ops
+end macro
+
 macro DIV32? ops&
   ebc.math_general 0x10, ops
 end macro
 
 macro DIV64? ops&
   ebc.math_general 0x50, ops
+end macro
+
+macro DIVU? ops&
+  ebc.math_general 0x51, ops
 end macro
 
 macro DIVU32? ops&
@@ -710,6 +856,10 @@ macro DIVU64? ops&
   ebc.math_general 0x51, ops
 end macro
 
+macro EXTNDB? ops&
+  ebc.math_general 0x5A, ops
+end macro
+
 macro EXTNDB32? ops&
   ebc.math_general 0x1A, ops
 end macro
@@ -718,12 +868,20 @@ macro EXTNDB64? ops&
   ebc.math_general 0x5A, ops
 end macro
 
+macro EXTNDD? ops&
+  ebc.math_general 0x5C, ops
+end macro
+
 macro EXTNDD32? ops&
   ebc.math_general 0x1C, ops
 end macro
 
 macro EXTNDD64? ops&
   ebc.math_general 0x5C, ops
+end macro
+
+macro EXTNDW? ops&
+  ebc.math_general 0x5B, ops
 end macro
 
 macro EXTNDW32? ops&
@@ -744,6 +902,30 @@ end macro
 
 macro JMP8cs? imm
   db 0xC2, imm
+end macro
+
+macro JMP? ops&
+  ebc.jmp_call_push_pop 0x101, 0001b, ops
+end macro
+
+macro JMPa? ops&
+  ebc.jmp_call_push_pop 0x101, 0000b, ops
+end macro
+
+macro JMPcs? ops&
+  ebc.jmp_call_push_pop 0x101, 1101b, ops
+end macro
+
+macro JMPcsa? ops&
+  ebc.jmp_call_push_pop 0x101, 1100b, ops
+end macro
+
+macro JMPcc? ops&
+  ebc.jmp_call_push_pop 0x101, 1001b, ops
+end macro
+
+macro JMPcca? ops&
+  ebc.jmp_call_push_pop 0x101, 1000b, ops
 end macro
 
 macro JMP32? ops&
@@ -798,12 +980,20 @@ macro LOADSP? ops&
   ebc.load_store_sp 0x29, ops
 end macro
 
+macro MOD? ops&
+  ebc.math_general 0x52, ops
+end macro
+
 macro MOD32? ops&
   ebc.math_general 0x12, ops
 end macro
 
 macro MOD64? ops&
   ebc.math_general 0x52, ops
+end macro
+
+macro MODU? ops&
+  ebc.math_general 0x53, ops
 end macro
 
 macro MODU32? ops&
@@ -954,12 +1144,20 @@ macro MOVsnd? ops&
   ebc.move_general 0x26, ops
 end macro
 
+macro MUL? ops&
+  ebc.math_general 0x4E, ops
+end macro
+
 macro MUL32? ops&
   ebc.math_general 0x0E, ops
 end macro
 
 macro MUL64? ops&
   ebc.math_general 0x4E, ops
+end macro
+
+macro MULU? ops&
+  ebc.math_general 0x4F, ops
 end macro
 
 macro MULU32? ops&
@@ -970,12 +1168,20 @@ macro MULU64? ops&
   ebc.math_general 0x4F, ops
 end macro
 
+macro NEG? ops&
+  ebc.math_general 0x4B, ops
+end macro
+
 macro NEG32? ops&
   ebc.math_general 0x0B, ops
 end macro
 
 macro NEG64? ops&
   ebc.math_general 0x4B, ops
+end macro
+
+macro NOT? ops&
+  ebc.math_general 0x4A, ops
 end macro
 
 macro NOT32? ops&
@@ -986,12 +1192,20 @@ macro NOT64? ops&
   ebc.math_general 0x4A, ops
 end macro
 
+macro OR? ops&
+  ebc.math_general 0x55, ops
+end macro
+
 macro OR32? ops&
   ebc.math_general 0x15, ops
 end macro
 
 macro OR64? ops&
   ebc.math_general 0x55, ops
+end macro
+
+macro POP? ops&
+  ebc.jmp_call_push_pop 0x6C, 0x80, ops
 end macro
 
 macro POP32? ops&
@@ -1004,6 +1218,10 @@ end macro
 
 macro POPn? ops&
   ebc.jmp_call_push_pop 0x36, 0x80, ops
+end macro
+
+macro PUSH? ops&
+  ebc.jmp_call_push_pop 0x6B, 0x80, ops
 end macro
 
 macro PUSH32? ops&
@@ -1022,12 +1240,20 @@ macro RET?
   dw 0x0004
 end macro
 
+macro SHL? ops&
+  ebc.math_general 0x57, ops
+end macro
+
 macro SHL32? ops&
   ebc.math_general 0x17, ops
 end macro
 
 macro SHL64? ops&
   ebc.math_general 0x57, ops
+end macro
+
+macro SHR? ops&
+  ebc.math_general 0x58, ops
 end macro
 
 macro SHR32? ops&
@@ -1042,12 +1268,20 @@ macro STORESP? ops&
   ebc.load_store_sp 0x2A, ops
 end macro
 
+macro SUB? ops&
+  ebc.math_general 0x4D, ops
+end macro
+
 macro SUB32? ops&
   ebc.math_general 0x0D, ops
 end macro
 
 macro SUB64? ops&
   ebc.math_general 0x4D, ops
+end macro
+
+macro XOR? ops&
+  ebc.math_general 0x56, ops
 end macro
 
 macro XOR32? ops&

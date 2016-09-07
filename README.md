@@ -22,6 +22,15 @@ to produce EBC executables..._
 
 See Chapter 21 (_EFI Byte Code Virtual Machine_) of the [UEFI Specifications](http://www.uefi.org/sites/default/files/resources/UEFI%20Spec%202_6.pdf#page=1001).
 
+This assembler accepts not specifying a size for arithmetic or comparison operations,
+in which case the 64-bit version will be used. This means that `XOR R1, R2` will be converted to
+`XOR64 R1, R2`.
+
+For `JMP`/`CALL[EX]` operations where you do not specify a size, the assembler will also insert
+the most appropriate version.  
+For instance `CALL @R1` will be converted to `CALL32 @R1` whereas `CALL 0x1234` will be converted
+to `CALL64 0x1234`.
+
 ## Assembly and testing (on Windows)
 
 * Make sure fasmg is in your path, or copy `fasmg.exe` to the current directory
