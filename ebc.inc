@@ -102,9 +102,11 @@ macro ebc.get_index_size index_size, nat, cst
   end while
   index_size = 16
   repeat 3 i:1
-    max_n = (1 shl i) shl (index_size - used_bits)
-    if (abs_nat < max_n)
-      break
+    if (index_size >= used_bits) & ((abs_nat = 0) | ((index_size - used_bits) >= (1 shl i)))
+      max_n = (1 shl i) shl (index_size - used_bits - 1)
+      if (abs_nat < max_n)
+        break
+      end if
     end if
     index_size = index_size * 2
   end repeat

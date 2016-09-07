@@ -11,7 +11,7 @@ entry EfiMain
 
 section '.text' code executable readable
 EfiMain:
-  MOVsn R1, @R2(+1,+512)
+  MOVsn R1, @R2(+0,+4096)
 
 section '.data' data readable writeable
 
