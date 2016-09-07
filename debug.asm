@@ -11,10 +11,7 @@ entry EfiMain
 
 section '.text' code executable readable
 EfiMain:
-  CALL TestSub
-  CALL @R1
-TestSub:
-  RET
+  MOVsn R1, @R2(+1,+512)
 
 section '.data' data readable writeable
 

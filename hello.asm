@@ -20,12 +20,12 @@ EfiMain:
   ;   PUSH64 ReturnAddress  ; -> +8
   ; Knowing this, the indexes for the two EfiMain() parameters are
   ; 'ImageHandle' at (+0,+16) and 'SystemTable' at (+1,+16).
-  MOVnw  R1, @R0(+1,+16)    ; SystemTable
-  MOVnw  R1, @R1(+5,+24)    ; SystemTable->ConOut
-  MOVnw  R3, @R1(+1,+0)     ; SystemTable->ConOut->OutputString()
+  MOVn   R1, @R0(+1,+16)    ; SystemTable
+  MOVn   R1, @R1(+5,+24)    ; SystemTable->ConOut
+  MOVn   R3, @R1(+1,+0)     ; SystemTable->ConOut->OutputString()
   MOVIqq R2, Hello
-  PUSHn  R2                 ; CDECL -> Params pushed in reverse order
-  PUSHn  R1
+  PUSHn  R2                 ; EX call -> native PUSH (PUSHn)
+  PUSHn  R1                 ; CDECL -> Params pushed in reverse order
   CALLEX R3                 ; Call OutputString()
   POPn   R1
   POPn   R2

@@ -42,6 +42,14 @@ macro di width, val
   end if
 end macro
 
+macro abs abs_val, val
+  if (val < 0)
+    abs_val = -cst
+  else
+    abs_val = val
+  end if
+end macro
+
 macro is_reloc ret, value
   local v
   v = value
@@ -83,6 +91,25 @@ macro ebc.parse_register reg_num, indirect_or_vm, reg
   reg_num = (reg_num and 0x07)
 end macro
 
+macro ebc.get_index_size index_size, nat, cst
+  local abs_cst, abs_nat, used_bits, max_n
+  abs abs_cst, cst
+  abs abs_nat, nat
+  used_bits = 4 ; 4 bits for sign + natural width
+  while (abs_cst > 0)
+    used_bits = used_bits + 1
+    abs_cst = abs_cst shr 1
+  end while
+  index_size = 16
+  repeat 3 i:1
+    max_n = (1 shl i) shl (index_size - used_bits)
+    if (abs_nat < max_n)
+      break
+    end if
+    index_size = index_size * 2
+  end repeat
+end macro
+
 macro ebc.insert_index index_size, nat, cst
   local abs_cst, abs_nat, sign, width, nbits
   sign = 0
@@ -90,17 +117,17 @@ macro ebc.insert_index index_size, nat, cst
   if ((cst < 0) & (nat > 0)) | ((cst > 0) & (nat < 0))
      err 'constant and natural values must have the same sign'
   end if
-  if (cst < 0)
+  abs abs_cst, cst
+  abs abs_nat, nat
+  if (abs_cst <> cst)
     sign = 1
-    cst = -cst
-    nat = -nat
   end if
   width = 8
-  if (nat = 0)
+  if (abs_nat = 0)
     width = 0
   else
     repeat 7
-      if (nat < (1 shl (% * nbits)))
+      if (abs_nat < (1 shl (% * nbits)))
         width = %
         break
       end if
@@ -109,11 +136,11 @@ macro ebc.insert_index index_size, nat, cst
   if (width > 7) | ((width = 7) & (index_size = 16))
     err 'natural value too large for index size'
   end if
-  if (cst >= 1 shl (index_size - 4 - (width*2)))
+  if (abs_cst >= 1 shl (index_size - 4 - (width*2)))
     err 'constant and natural values too large for index size'
   end if
   ; NB: we abuse the fact that 'di' inserts a 'dq' for size 3 or 4
-  di (index_size/16), sign shl (index_size-1) + width shl (index_size-4) + cst shl (width*nbits) + nat
+  di (index_size/16), sign shl (index_size-1) + width shl (index_size-4) + abs_cst shl (width*nbits) + abs_nat
 end macro
 
 macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
@@ -190,7 +217,8 @@ end macro
 
 macro ebc.move_general opcode, ops&
   local op1, op2, op1_reg_num, op2_reg_num, op1_indirect, op2_indirect, op2_imm
-  local op1_index, op2_index, op1_nat, op2_nat, op1_cst, op2_cst, index_size
+  local op1_index, op2_index, op1_nat, op2_nat, op1_cst, op2_cst, _opcode
+  local index_size, index_size1, index_size2
   op1_index = 0
   op2_index = 0
   op1_nat = 0
@@ -198,6 +226,8 @@ macro ebc.move_general opcode, ops&
   op1_cst = 0
   op2_cst = 0
   op2_imm = 0
+  index_size = 16
+  _opcode = opcode and 0xff
 
   match _op1 (n1 =, c1) =, _op2 (n2 =, c2), ops
     op1_index = 1
@@ -256,24 +286,44 @@ macro ebc.move_general opcode, ops&
   else if (op2_index = 3) & (op2_indirect = 1)
     err 'immediate value specified for indirect register operation'
   end if
-  if (opcode > 0x100) & ((op1_index = 1) | (op2_index = 1))
-    ; TODO: would be nicer to compute the required size ourselves
-    err 'index provided but no index size specified'
-  end if
   if (op1_nat = 0) & (op1_cst = 0)
     op1_index = 0
   end if
   if (op2_index = 1) & (op2_nat = 0) & (op2_cst = 0)
     op2_index = 0
   end if
-  index_size = 16
   if ((opcode >= 0x21) & (opcode <= 0x24)) | (opcode = 0x26) | (opcode = 0x33)
     index_size = 32
   else if (opcode = 0x28)
     index_size = 64
+  else if (opcode > 0x100) & ((op1_index = 1) | (op2_index = 1))
+    index_size1 = 0
+    index_size2 = 0
+    if (op1_index = 1)
+      ebc.get_index_size index_size1, op1_nat, op1_cst
+    end if
+    if (op2_index = 1)
+      ebc.get_index_size index_size2, op2_nat, op2_cst
+    end if
+    if (index_size1 < index_size2)
+      index_size = index_size2
+    else
+      index_size = index_size1
+    end if
+    if (index_size = 64) & (opcode = 0x120)
+      _opcode = 0x28
+    else if (index_size = 32) & (opcode >= 0x11D) & (opcode <= 0x120)
+      _opcode = _opcode + 4 ; switch _opcode to the 'd' version
+    else if (index_size = 32) & ((opcode = 0x132) | (opcode = 0x125))
+      _opcode = _opcode + 1 ; switch _opcode to the 'd' version
+    else if (index_size = 16) & (((opcode >= 0x11D) & (opcode <= 0x120)) | (opcode = 0x132) | (opcode = 0x125))
+      ; nothing to do - _opcode is already set for 'w' version
+    else
+      err 'constant and natural values too large for index encoding'
+    end if
   end if
 
-  db op1_index shl 7 + (op2_index and 1) shl 6 + (opcode and 0xff)
+  db op1_index shl 7 + (op2_index and 1) shl 6 + _opcode
   db op2_indirect shl 7 + op2_reg_num shl 4 + op1_indirect shl 3 + op1_reg_num
   if (op1_index = 1)
     ebc.insert_index index_size, op1_nat, op1_cst
@@ -1116,6 +1166,10 @@ macro MOVInq? ops&
   ebc.move_imm_ind_rel -1, 3, ops
 end macro
 
+macro MOVn? ops&
+  ebc.move_general 0x132, ops
+end macro
+
 macro MOVnw? ops&
   ebc.move_general 0x32, ops
 end macro
@@ -1134,6 +1188,10 @@ end macro
 
 macro MOVRELq? ops&
   ebc.move_imm_ind_rel -2, 3, ops
+end macro
+
+macro MOVsn? ops&
+  ebc.move_general 0x125, ops
 end macro
 
 macro MOVsnw? ops&
