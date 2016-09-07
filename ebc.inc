@@ -19,9 +19,12 @@
 element R
 
 repeat 8 i:0
-  element R#i? : R + i
+  element R#i?  : R + i
   element @R#i? : R + i + 0x80
 end repeat
+
+element FLAGS?  : R + 0x800
+element IP?     : R + 0x801
 
 ;
 ; Supporting macros
@@ -40,25 +43,27 @@ macro di width, val
 end macro
 
 macro is_reloc rel, value
-    local v
-    v = value
-    if (~ v relativeto 0) | (v relativeto PE.RELOCATION)
-      rel = 1
-    else
-      rel = 0
-    end if
+  local v
+  v = value
+  if (~ v relativeto 0) | (v relativeto PE.RELOCATION)
+    rel = 1
+  else
+    rel = 0
+  end if
 end macro
 
-macro ebc.parse_register reg_num, indirect, Rn
+macro ebc.parse_register reg_num, indirect_or_vm, reg
   local value
-  value = +Rn
+  value = +reg
   reg_num = value metadata 1 - R
-  if (reg_num >= 0x80)
-    reg_num = reg_num - 0x80
-    indirect = 1
+  if (reg_num >= 0x800)
+    indirect_or_vm = 2
+  else if (reg_num >= 0x80)
+    indirect_or_vm = 1
   else
-    indirect = 0
+    indirect_or_vm = 0
   end if
+  reg_num = (reg_num and 0x07)
 end macro
 
 macro ebc.insert_index index_size, nat, cst
@@ -145,6 +150,9 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
   end match
 
   ebc.parse_register op1_reg_num, op1_indirect, op1
+  if (op1_indirect > 1)
+    err 'illegal register'
+  end if
   if (op1_index = 1) & (op1_indirect <> 1)
     err 'index specified for direct register operation'
   end if
@@ -173,6 +181,7 @@ macro ebc.move_general opcode, ops&
   op1_cst = 0
   op2_cst = 0
   op2_imm = 0
+
   match _op1 (n1 =, c1) =, _op2 (n2 =, c2), ops
     op1_index = 1
     op1_nat = n1
@@ -222,6 +231,9 @@ macro ebc.move_general opcode, ops&
 
   ebc.parse_register op1_reg_num, op1_indirect, op1
   ebc.parse_register op2_reg_num, op2_indirect, op2
+  if (op1_indirect > 1) | (op2_indirect > 1)
+    err 'illegal register'
+  end if
   if ((op1_index = 1) & (op1_indirect <> 1)) | ((op2_index = 1) & (op2_indirect <> 1))
     err 'index specified for direct register operation'
   else if (op2_index = 3) & (op2_indirect = 1)
@@ -236,10 +248,6 @@ macro ebc.move_general opcode, ops&
   if (op2_index = 1) & (op2_nat = 0) & (op2_cst = 0)
     op2_index = 0
   end if
-
-  db op1_index shl 7 + (op2_index and 1) shl 6 + (opcode and 0xff)
-  db op2_indirect shl 7 + op2_reg_num shl 4 + op1_indirect shl 3 + op1_reg_num
-
   index_size = 16
   if ((opcode >= 0x21) & (opcode <= 0x24)) | (opcode = 0x26) | (opcode = 0x33)
     index_size = 32
@@ -247,6 +255,8 @@ macro ebc.move_general opcode, ops&
     index_size = 64
   end if
 
+  db op1_index shl 7 + (op2_index and 1) shl 6 + (opcode and 0xff)
+  db op2_indirect shl 7 + op2_reg_num shl 4 + op1_indirect shl 3 + op1_reg_num
   if (op1_index = 1)
     ebc.insert_index index_size, op1_nat, op1_cst
   end if
@@ -264,6 +274,7 @@ macro ebc.math_general opcode, ops&
   op2_cst = 0
   op2_imm = 0
   is_64 = 0
+
   match _op1 =, _op2 (n2 =, c2), ops
     op2_index = 1
     define op1 _op1
@@ -285,6 +296,9 @@ macro ebc.math_general opcode, ops&
 
   ebc.parse_register op1_reg_num, op1_indirect, op1
   ebc.parse_register op2_reg_num, op2_indirect, op2
+  if (op1_indirect > 1) | (op2_indirect > 1)
+    err 'illegal register'
+  end if
   if (op2_index = 1) & (op2_indirect <> 1)
     err 'index specified for direct register operation'
   end if
@@ -305,19 +319,20 @@ macro ebc.math_general opcode, ops&
   end if
 end macro
 
-macro ebc.jmp_call_push_pop opcode, flags, ops&
+macro ebc.jmp_call_push_pop opcode, opcode_flags, ops&
   local op1, op1_reg_num, op1_indirect, op1_index, op1_nat, op1_cst, op1_imm, op1_imm_reloc, index_size
   op1_nat = 0
   op1_cst = 0
   op1_imm = 0
-  if (flags < 0x80) & (opcode and 0x40)
+
+  if (opcode_flags < 0x80) & (opcode and 0x40)
     index_size = 64
     op1_index = 3
     op1_reg_num = 0
     op1_indirect = 0
     op1_imm = ops
   else
-    if (flags >= 0x80)
+    if (opcode_flags >= 0x80)
       index_size = 16
     else
       index_size = 32
@@ -337,7 +352,11 @@ macro ebc.jmp_call_push_pop opcode, flags, ops&
       op1_index = 0
       define op1 ops
     end match
+
     ebc.parse_register op1_reg_num, op1_indirect, op1
+    if (op1_indirect > 1)
+      err 'illegal register'
+    end if
     is_reloc op1_imm_reloc, op1_imm
     if (~op1_imm_reloc) & (op1_nat = 0) & (op1_cst = 0) & (op1_imm = 0)
       op1_index = 0
@@ -351,7 +370,7 @@ macro ebc.jmp_call_push_pop opcode, flags, ops&
   end if
 
   db (op1_index and 1) shl 7 + opcode
-  db (flags and 0x0F) shl 4 + op1_indirect shl 3 + op1_reg_num
+  db (opcode_flags and 0x0F) shl 4 + op1_indirect shl 3 + op1_reg_num
   if (op1_index = 1)
     ebc.insert_index index_size, op1_nat, op1_cst
   else if (op1_index = 3)
@@ -359,11 +378,96 @@ macro ebc.jmp_call_push_pop opcode, flags, ops&
   end if
 end macro
 
+macro ebc.cmp_immediate opcode, width, ops&
+  local op1, op2, op1_reg_num, op1_indirect, op1_index
+  local op1_nat, op1_cst, op2_width
+  op1_nat = 0
+  op1_cst = 0
+  op2_width = width
+
+  match _op1 (n1 =, c1) =, _op2, ops
+    op1_index = 1
+    define op1 _op1
+    define op2 _op2
+    op1_nat = n1
+    op1_cst = c1
+  else match _op1 =, _op2, ops
+    op1_index = 0
+    define op1 _op1
+    define op2 _op2
+  else
+    err 'syntax error'
+  end match
+
+  ebc.parse_register op1_reg_num, op1_indirect, op1
+  if (op1_indirect > 1)
+    err 'illegal register'
+  end if
+  if (op1_index = 1) & (op1_indirect <> 1)
+    err 'index specified for direct register operation'
+  end if
+  if (op1_nat = 0) & (op1_cst = 0)
+    op1_index = 0
+  end if
+  if (op2_width = -1)
+    if (op2 and 0xFFFF0000)
+      op2_width = 1
+    else
+      op2_width = 0
+    end if
+  end if
+
+  db op2_width shl 7 + opcode
+  db op1_index shl 4 + op1_indirect shl 3 + op1_reg_num
+  if (op1_index = 1)
+    ebc.insert_index 16, op1_nat, op1_cst
+  end if
+  di op2_width+1, op2
+end macro
+
+macro ebc.load_store_sp opcode, ops&
+  local op1_reg_num, op2_reg_num, op1_indirect_or_vm, op2_indirect_or_vm
+  match [_op1] =, _op2, ops
+    if (opcode <> 0x29)
+      err 'syntax error'
+    end if
+    define op1 _op1
+    define op2 _op2
+  else match _op1 =, [_op2], ops
+    if (opcode <> 0x2A)
+      err 'syntax error'
+    end if
+    define op1 _op1
+    define op2 _op2
+  else
+    err 'syntax error'
+  end match
+
+  ebc.parse_register op1_reg_num, op1_indirect_or_vm, op1
+  ebc.parse_register op2_reg_num, op2_indirect_or_vm, op2
+  if (opcode = 0x29)
+    if (op1_indirect_or_vm <> 2) | (op1_reg_num <> 0)
+      err 'illegal register'
+    end if
+    if (op2_indirect_or_vm <> 0)
+      err 'syntax error'
+    end if
+  else if (opcode = 0x2A)
+    if (op2_indirect_or_vm <> 2)
+      err 'illegal register'
+    end if
+    if (op1_indirect_or_vm <> 0)
+      err 'syntax error'
+    end if
+  end if
+
+  db opcode
+  db op2_reg_num shl 4 + op1_reg_num
+end macro
+
 ;
 ; Instruction list
 ;
-
-; TODO: CMP, CMPI, LOADSP, STORESP
 
 macro ADD32? ops&
   ebc.math_general 0x0C, ops
@@ -428,6 +532,166 @@ end macro
 
 macro CALLEX64a? ops&
   ebc.jmp_call_push_pop 0x43, 0010b, ops
+end macro
+
+macro CMP32eq? ops&
+  ebc.math_general 0x05, ops
+end macro
+
+macro CMP64eq? ops&
+  ebc.math_general 0x45, ops
+end macro
+
+macro CMP32lte? ops&
+  ebc.math_general 0x06, ops
+end macro
+
+macro CMP64lte? ops&
+  ebc.math_general 0x46, ops
+end macro
+
+macro CMP32gte? ops&
+  ebc.math_general 0x07, ops
+end macro
+
+macro CMP64gte? ops&
+  ebc.math_general 0x47, ops
+end macro
+
+macro CMP32ulte? ops&
+  ebc.math_general 0x08, ops
+end macro
+
+macro CMP64ulte? ops&
+  ebc.math_general 0x48, ops
+end macro
+
+macro CMP32ugte? ops&
+  ebc.math_general 0x09, ops
+end macro
+
+macro CMP64ugte? ops&
+  ebc.math_general 0x49, ops
+end macro
+
+macro CMPI32eq? ops&
+  ebc.cmp_immediate 0x2D, -1, ops
+end macro
+
+macro CMPI32weq? ops&
+  ebc.cmp_immediate 0x2D, 0, ops
+end macro
+
+macro CMPI32deq? ops&
+  ebc.cmp_immediate 0x2D, 1, ops
+end macro
+
+macro CMPI64eq? ops&
+  ebc.cmp_immediate 0x6D, -1, ops
+end macro
+
+macro CMPI64weq? ops&
+  ebc.cmp_immediate 0x6D, 0, ops
+end macro
+
+macro CMPI64deq? ops&
+  ebc.cmp_immediate 0x6D, 1, ops
+end macro
+
+macro CMPI32lte? ops&
+  ebc.cmp_immediate 0x2E, -1, ops
+end macro
+
+macro CMPI32wlte? ops&
+  ebc.cmp_immediate 0x2E, 0, ops
+end macro
+
+macro CMPI32dlte? ops&
+  ebc.cmp_immediate 0x2E, 1, ops
+end macro
+
+macro CMPI64lte? ops&
+  ebc.cmp_immediate 0x6E, -1, ops
+end macro
+
+macro CMPI64wlte? ops&
+  ebc.cmp_immediate 0x6E, 0, ops
+end macro
+
+macro CMPI64dlte? ops&
+  ebc.cmp_immediate 0x6E, 1, ops
+end macro
+
+macro CMPI32gte? ops&
+  ebc.cmp_immediate 0x2F, -1, ops
+end macro
+
+macro CMPI32wgte? ops&
+  ebc.cmp_immediate 0x2F, 0, ops
+end macro
+
+macro CMPI32dgte? ops&
+  ebc.cmp_immediate 0x2F, 1, ops
+end macro
+
+macro CMPI64gte? ops&
+  ebc.cmp_immediate 0x6F, -1, ops
+end macro
+
+macro CMPI64wgte? ops&
+  ebc.cmp_immediate 0x6F, 0, ops
+end macro
+
+macro CMPI64dgte? ops&
+  ebc.cmp_immediate 0x6F, 1, ops
+end macro
+
+macro CMPI32ulte? ops&
+  ebc.cmp_immediate 0x30, -1, ops
+end macro
+
+macro CMPI32wulte? ops&
+  ebc.cmp_immediate 0x30, 0, ops
+end macro
+
+macro CMPI32dulte? ops&
+  ebc.cmp_immediate 0x30, 1, ops
+end macro
+
+macro CMPI64ulte? ops&
+  ebc.cmp_immediate 0x70, -1, ops
+end macro
+
+macro CMPI64wulte? ops&
+  ebc.cmp_immediate 0x70, 0, ops
+end macro
+
+macro CMPI64dulte? ops&
+  ebc.cmp_immediate 0x70, 1, ops
+end macro
+
+macro CMPI32ugte? ops&
+  ebc.cmp_immediate 0x31, -1, ops
+end macro
+
+macro CMPI32wugte? ops&
+  ebc.cmp_immediate 0x31, 0, ops
+end macro
+
+macro CMPI32dugte? ops&
+  ebc.cmp_immediate 0x31, 1, ops
+end macro
+
+macro CMPI64ugte? ops&
+  ebc.cmp_immediate 0x71, -1, ops
+end macro
+
+macro CMPI64wugte? ops&
+  ebc.cmp_immediate 0x71, 0, ops
+end macro
+
+macro CMPI64dugte? ops&
+  ebc.cmp_immediate 0x71, 1, ops
 end macro
 
 macro DIV32? ops&
@@ -528,6 +792,10 @@ end macro
 
 macro JMP64cca? ops&
   ebc.jmp_call_push_pop 0x41, 1000b, ops
+end macro
+
+macro LOADSP? ops&
+  ebc.load_store_sp 0x29, ops
 end macro
 
 macro MOD32? ops&
@@ -768,6 +1036,10 @@ end macro
 
 macro SHR64? ops&
   ebc.math_general 0x58, ops
+end macro
+
+macro STORESP? ops&
+  ebc.load_store_sp 0x2A, ops
 end macro
 
 macro SUB32? ops&

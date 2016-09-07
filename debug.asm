@@ -11,11 +11,7 @@ entry efi_main
 
 section '.text' code executable readable
 efi_main:
-  CALL32 R0(sub)
-  RET
-
-sub:
-  RET
+  STORESP R1, [IP]
 
 section '.data' data readable writeable
 
