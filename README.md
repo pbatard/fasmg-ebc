@@ -31,8 +31,21 @@ the most appropriate version.
 For instance `CALL @R1` will be converted to `CALL32 @R1` whereas `CALL 0x1234` will be converted
 to `CALL64 0x1234`.
 
-Finally, the assembler also guesses the size of indexes or immediates, where possible, if you
-don't specify any. E.g. `MOVIn R1, (+2,+4096)` is assembled as `MOVInd R1, (+2,+4096)`.
+Also, if you are using a label with `JMP`, the assembler automatically converts it to a relative offset.  
+For instance, say you have the following code:
+```
+Label:
+   (...)
+   JMPcc Label
+```
+Then `JMPcc` will either be converted to `JMP8cc <offset>` or `JMP32cc R0(<offset>)` or `JMP64cc <offset>`
+with `<offset>` being the relative value required for each specific instruction size, to point to `Label`.  
+Also note that the default for `JMP32` and `JMP64` is to use relative mode. If you want to use absolute mode,
+you should suffix it with `a` (e.g. `JMP64acs 0x40000000`). As per specs, `JMP8` always uses relative mode.
+
+Finally, the assembler can also guess the size of indexes or immediates, if you don't explicitly specify
+one. For instance `MOVIn R1, (+2,+8)` gets assembled as `MOVInw R1, (+2,+8)` whereas `MOVIn R1, (+2,+4096)`
+gets assembled as `MOVInd R1, (+2,+4096)`.
 
 ## Assembly and testing (on Windows)
 

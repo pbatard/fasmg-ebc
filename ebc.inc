@@ -53,7 +53,7 @@ end macro
 macro is_reloc ret, value
   local v
   v = value
-  if (~ v relativeto 0) | (v relativeto PE.RELOCATION)
+  if ((~ v relativeto 0) | (v relativeto PE.RELOCATION)) & (~ v metadata 1 relativeto R)
     ret = 1
   else
     ret = 0
@@ -61,13 +61,14 @@ macro is_reloc ret, value
 end macro
 
 macro is_immediate ret, ops&
-  local val, is_rel
   match a =, b =, c, ops
     ret = 0
   else match a =, b, ops
     ret = 0
+  else match a ( b ), ops
+    ret = 0
   else match v, ops
-     if (v relativeto 0) | (v relativeto PE.RELOCATION)
+     if ((~ v relativeto 0) | (v relativeto PE.RELOCATION)) & (~ v metadata 1 relativeto R)
        ret = 1
      else
        ret = 0
@@ -413,6 +414,33 @@ macro ebc.math_general opcode, ops&
   end if
 end macro
 
+macro ebc.jmp_get_offset jmp_size, offset, ops&
+  jmp_size = -1
+  match reg (n =, c), ops
+    ; indexed => no offset
+  else match reg (imm), ops
+    ; register + immediate => no offset
+  else match addr, ops
+    is_reloc rel, addr
+    if (rel)
+      disp = addr - $
+      if (disp and 0x1)
+        err 'JMP target must be aligned to word boundary'
+      end if
+      if ((disp/2) <= 0x80) | ((disp/2) >= -0x80)
+        offset = disp/2 - 1
+        jmp_size = 8
+      else if ((disp-6) < 0x80000000) | ((disp-6) > -0x80000000)
+        jmp_size = 32
+        offset = disp - 6
+      else
+        jmp_size = 64
+        offset = disp - 10
+      end if
+    end if
+  end match
+end macro
+
 macro ebc.jmp_call_push_pop opcode, opcode_flags, ops&
   local op1, op1_reg_num, op1_indirect, op1_index, op1_nat, op1_cst
   local op1_imm, op1_imm_reloc, index_size, _opcode, is_op1_imm
@@ -473,6 +501,27 @@ macro ebc.jmp_call_push_pop opcode, opcode_flags, ops&
     ebc.insert_index index_size, op1_nat, op1_cst
   else if (op1_index = 3)
     di (index_size/16), op1_imm
+  end if
+end macro
+
+macro ebc.jmp_short flags, imm8
+  local rel, disp
+  db flags shl 6 + 0x02, imm8
+end macro
+
+macro ebc.jmp_auto flags, ops&
+  local jmp_size, offset
+  ebc.jmp_get_offset jmp_size, offset, ops
+  if (jmp_size > 0)
+    if (jmp_size = 8)
+       ebc.jmp_short (flags shr 2), offset
+     else if (jmp_size = 32)
+       ebc.jmp_call_push_pop 0x01, flags, R0(offset)
+     else
+       ebc.jmp_call_push_pop 0x41, flags, offset
+     end if
+  else
+    ebc.jmp_call_push_pop 0x101, flags, ops
   end if
 end macro
 
@@ -969,20 +1018,8 @@ macro EXTNDW64? ops&
   ebc.math_general 0x5B, ops
 end macro
 
-macro JMP8? imm
-  db 0x02, imm
-end macro
-
-macro JMP8cc? imm
-  db 0x82, imm
-end macro
-
-macro JMP8cs? imm
-  db 0xC2, imm
-end macro
-
 macro JMP? ops&
-  ebc.jmp_call_push_pop 0x101, 0001b, ops
+  ebc.jmp_auto 0001b, ops
 end macro
 
 macro JMPa? ops&
@@ -990,18 +1027,18 @@ macro JMPa? ops&
 end macro
 
 macro JMPcs? ops&
-  ebc.jmp_call_push_pop 0x101, 1101b, ops
+  ebc.jmp_auto 1101b, ops
 end macro
 
-macro JMPcsa? ops&
+macro JMPacs? ops&
   ebc.jmp_call_push_pop 0x101, 1100b, ops
 end macro
 
 macro JMPcc? ops&
-  ebc.jmp_call_push_pop 0x101, 1001b, ops
+  ebc.jmp_auto 1001b, ops
 end macro
 
-macro JMPcca? ops&
+macro JMPacc? ops&
   ebc.jmp_call_push_pop 0x101, 1000b, ops
 end macro
 
@@ -1017,7 +1054,7 @@ macro JMP32cs? ops&
   ebc.jmp_call_push_pop 0x01, 1101b, ops
 end macro
 
-macro JMP32csa? ops&
+macro JMP32acs? ops&
   ebc.jmp_call_push_pop 0x01, 1100b, ops
 end macro
 
@@ -1025,7 +1062,7 @@ macro JMP32cc? ops&
   ebc.jmp_call_push_pop 0x01, 1001b, ops
 end macro
 
-macro JMP32cca? ops&
+macro JMP32acc? ops&
   ebc.jmp_call_push_pop 0x01, 1000b, ops
 end macro
 
@@ -1041,7 +1078,7 @@ macro JMP64cs? ops&
   ebc.jmp_call_push_pop 0x41, 1101b, ops
 end macro
 
-macro JMP64csa? ops&
+macro JMP64acs? ops&
   ebc.jmp_call_push_pop 0x41, 1100b, ops
 end macro
 
@@ -1049,8 +1086,20 @@ macro JMP64cc? ops&
   ebc.jmp_call_push_pop 0x41, 1001b, ops
 end macro
 
-macro JMP64cca? ops&
+macro JMP64acc? ops&
   ebc.jmp_call_push_pop 0x41, 1000b, ops
+end macro
+
+macro JMP8? ops&
+  ebc.jmp_short 00b, ops
+end macro
+
+macro JMP8cc? ops&
+  ebc.jmp_short 10b, ops
+end macro
+
+macro JMP8cs? ops&
+  ebc.jmp_short 11b, ops
 end macro
 
 macro LOADSP? ops&
