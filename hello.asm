@@ -23,7 +23,7 @@ EfiMain:
   MOVn   R1, @R0(+1,+16)    ; SystemTable
   MOVn   R1, @R1(+5,+24)    ; SystemTable->ConOut
   MOVn   R3, @R1(+1,+0)     ; SystemTable->ConOut->OutputString()
-  MOVIqq R2, Hello
+  MOVI   R2, Hello
   PUSHn  R2                 ; EX call -> native PUSH (PUSHn)
   PUSHn  R1                 ; CDECL -> Params pushed in reverse order
   CALLEX R3                 ; Call OutputString()

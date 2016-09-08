@@ -146,8 +146,8 @@ macro ebc.insert_index index_size, nat, cst
 end macro
 
 macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
-  local op1, op2, op1_reg_num, op1_indirect, op1_index, op2_index
-  local op1_nat, op2_nat, op1_cst, op2_cst, opcode, ins_width
+  local op1, op2, op1_reg_num, op1_indirect, op1_index, op2_index, index_size
+  local op1_nat, op2_nat, op1_cst, op2_cst, opcode, ins_width, _op2_width, rel
   if (mov_width >= 0)
     opcode = 0x37
     ins_width = mov_width
@@ -158,7 +158,6 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
     opcode = 0x39
     ins_width = 0
   end if
-  db op2_width shl 6 + opcode
   op1_nat = 0
   op1_cst = 0
 
@@ -205,15 +204,40 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
   if (op1_nat = 0) & (op1_cst = 0)
     op1_index = 0
   end if
+  _op2_width = op2_width
+  if (_op2_width = -1)
+    if (mov_width = -1)
+      ebc.get_index_size index_size, op2_nat, op2_cst
+      if (index_size > 64)
+        err 'constant and natural values too large for index encoding'
+      end if
+      repeat 3 i:1
+        if index_size = (8 shl i)
+          _op2_width = i
+          break
+        end if
+      end repeat
+    else
+      is_reloc rel, op2
+      if (rel) | (op2 and 0xFFFFFFFF00000000)
+        _op2_width = 3
+      else if (op2 and 0xFFFF0000)
+        _op2_width = 2
+      else
+        _op2_width = 1
+      end if
+    end if
+  end if
 
+  db _op2_width shl 6 + opcode
   db op1_index shl 6 + ins_width shl 4 + op1_indirect shl 3 + op1_reg_num
   if (op1_index = 1)
     ebc.insert_index 16, op1_nat, op1_cst
   end if
   if (mov_width <> -1)
-    di op2_width, op2
+    di _op2_width, op2
   else
-    ebc.insert_index (1 shl op2_width)*8, op2_nat, op2_cst
+    ebc.insert_index (1 shl _op2_width)*8, op2_nat, op2_cst
   end if
 end macro
 
@@ -454,7 +478,7 @@ end macro
 
 macro ebc.cmp_immediate opcode, width, ops&
   local op1, op2, op1_reg_num, op1_indirect, op1_index
-  local op1_nat, op1_cst, op2_width
+  local op1_nat, op1_cst, op2_width, rel
   op1_nat = 0
   op1_cst = 0
   op2_width = width
@@ -484,7 +508,8 @@ macro ebc.cmp_immediate opcode, width, ops&
     op1_index = 0
   end if
   if (op2_width = -1)
-    if (op2 and 0xFFFF0000)
+    is_reloc rel, op2
+    if (rel) | (op2 and 0xFFFF0000)
       op2_width = 1
     else
       op2_width = 0
@@ -1056,6 +1081,10 @@ macro MODU64? ops&
   ebc.math_general 0x53, ops
 end macro
 
+macro MOV? ops&
+  ebc.move_general 0x120, ops
+end macro
+
 macro MOVbw? ops&
   ebc.move_general 0x1D, ops
 end macro
@@ -1108,6 +1137,14 @@ macro MOVqq? ops&
   ebc.move_general 0x28, ops
 end macro
 
+macro MOVI? ops&
+  ebc.move_imm_ind_rel 3, -1, ops
+end macro
+
+macro MOVIb? ops&
+  ebc.move_imm_ind_rel 0, -1, ops
+end macro
+
 macro MOVIbw? ops&
   ebc.move_imm_ind_rel 0, 1, ops
 end macro
@@ -1118,6 +1155,10 @@ end macro
 
 macro MOVIbq? ops&
   ebc.move_imm_ind_rel 0, 3, ops
+end macro
+
+macro MOVIw? ops&
+  ebc.move_imm_ind_rel 1, -1, ops
 end macro
 
 macro MOVIww? ops&
@@ -1132,6 +1173,10 @@ macro MOVIwq? ops&
   ebc.move_imm_ind_rel 1, 3, ops
 end macro
 
+macro MOVId? ops&
+  ebc.move_imm_ind_rel 2, -1, ops
+end macro
+
 macro MOVIdw? ops&
   ebc.move_imm_ind_rel 2, 1, ops
 end macro
@@ -1144,6 +1189,10 @@ macro MOVIdq? ops&
   ebc.move_imm_ind_rel 2, 3, ops
 end macro
 
+macro MOVIq? ops&
+  ebc.move_imm_ind_rel 3, -1, ops
+end macro
+
 macro MOVIqw? ops&
   ebc.move_imm_ind_rel 3, 1, ops
 end macro
@@ -1154,6 +1203,10 @@ end macro
 
 macro MOVIqq? ops&
   ebc.move_imm_ind_rel 3, 3, ops
+end macro
+
+macro MOVIn? ops&
+  ebc.move_imm_ind_rel -1, -1, ops
 end macro
 
 macro MOVInw? ops&
@@ -1178,6 +1231,10 @@ end macro
 
 macro MOVnd? ops&
   ebc.move_general 0x33, ops
+end macro
+
+macro MOVREL? ops&
+  ebc.move_imm_ind_rel -2, -1, ops
 end macro
 
 macro MOVRELw? ops&
