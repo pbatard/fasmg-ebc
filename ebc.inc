@@ -203,7 +203,7 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
     err 'illegal register'
   end if
   if (op1_index = 1) & (op1_indirect <> 1)
-    err 'index specified for direct register operation'
+    err 'illegal direct register indexed operation'
   end if
   if (op1_nat = 0) & (op1_cst = 0)
     op1_index = 0
@@ -311,8 +311,9 @@ macro ebc.move_general opcode, ops&
   if (op1_indirect > 1) | (op2_indirect > 1)
     err 'illegal register'
   end if
-  if ((op1_index = 1) & (op1_indirect <> 1)) | ((op2_index = 1) & (op2_indirect <> 1))
-    err 'index specified for direct register operation'
+  ; MOV and MOVn accept direct indexed for op2 (e.g. 'MOV R0, R0(+1,+8)'), but *not* MOVsn
+  if ((op1_index = 1) & (op1_indirect <> 1)) | (((_opcode = 0x25) | (_opcode = 0x26)) & (op2_index = 1) & (op2_indirect <> 1))
+    err 'illegal direct register indexed operation'
   else if (op2_index = 3) & (op2_indirect = 1)
     err 'immediate value specified for indirect register operation'
   end if
@@ -401,7 +402,7 @@ macro ebc.math_general opcode, ops&
     err 'illegal indirect on first operand'
   end if
   if (op2_index = 1) & (op2_indirect <> 1)
-    err 'index specified for direct register operation'
+    err 'illegal direct register indexed operation'
   end if
   if (op2_index = 3) & (op2_indirect = 1)
     err 'immediate value specified for indirect register operation'
@@ -494,7 +495,7 @@ macro ebc.jmp_call_push_pop opcode, opcode_flags, ops&
       op1_index = 0
     end if
     if (op1_index = 1) & (op1_indirect <> 1)
-      err 'index specified for direct register operation'
+      err 'illegal direct register indexed operation'
     end if
     if (op1_index = 3) & (op1_indirect = 1)
       err 'immediate value specified for indirect register operation'
@@ -559,7 +560,7 @@ macro ebc.cmp_immediate opcode, width, ops&
     err 'illegal register'
   end if
   if (op1_index = 1) & (op1_indirect <> 1)
-    err 'index specified for direct register operation'
+    err 'illegal direct register indexed operation'
   end if
   if (op1_nat = 0) & (op1_cst = 0)
     op1_index = 0

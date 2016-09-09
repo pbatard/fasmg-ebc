@@ -82,6 +82,7 @@ Exit:
   MOVqd @R1(-0x1FFF, -0xFFF), R2
   MOVdd @R1, @R2
   MOV @R1, @R2
+  MOVqw R0, R0(+0,+112)
 
   MOVIww R1, 0xFFFF
   MOVIwd @R1, -0x7FFF
@@ -98,6 +99,7 @@ Exit:
   MOVnw R0, R1
   MOVnd @R0, @R1
   MOVnw @R0(55,44), R1
+  MOVnd R0, R0(+2222,+111)
   MOVn @R0(1234,5678), @R2(2345,6789)
   MOVsnw R0, R1(1235)
   MOVsnd @R0(45,67), R1((EfiMain - Exit)*8)
