@@ -44,16 +44,16 @@ end macro
 
 macro abs abs_val, val
   if (val < 0)
-    abs_val = -cst
+    abs_val = -val
   else
     abs_val = val
   end if
 end macro
 
-macro is_reloc ret, value
+macro is_relative ret, val
   local v
-  v = value
-  if ((~ v relativeto 0) | (v relativeto PE.RELOCATION)) & (~ v metadata 1 relativeto R)
+  v = val
+  if (val relativeto $)
     ret = 1
   else
     ret = 0
@@ -68,11 +68,13 @@ macro is_immediate ret, ops&
   else match a ( b ), ops
     ret = 0
   else match v, ops
-     if ((~ v relativeto 0) | (v relativeto PE.RELOCATION)) & (~ v metadata 1 relativeto R)
-       ret = 1
-     else
-       ret = 0
-     end if
+    local _v
+    _v = +v
+    if (_v relativeto 0)
+      ret = 1
+    else
+      is_relative ret, _v
+    end if
   else
     ret = 0
   end match
@@ -93,7 +95,7 @@ macro ebc.parse_register reg_num, indirect_or_vm, reg
 end macro
 
 macro ebc.get_index_size index_size, nat, cst
-  local abs_cst, abs_nat, used_bits, max_n
+  local abs_cst, abs_nat, used_bits, max_n, nbits
   abs abs_cst, cst
   abs abs_nat, nat
   used_bits = 4 ; 4 bits for sign + natural width
@@ -103,8 +105,9 @@ macro ebc.get_index_size index_size, nat, cst
   end while
   index_size = 16
   repeat 3 i:1
-    if (index_size >= used_bits) & ((abs_nat = 0) | ((index_size - used_bits) >= (1 shl i)))
-      max_n = (1 shl i) shl (index_size - used_bits - 1)
+    nbits = (1 shl i) ; factor for number of bits assigned to natural units
+    if (index_size >= used_bits) & ((abs_nat = 0) | ((index_size - used_bits) >= nbits))
+      max_n = nbits shl ((index_size - used_bits) and (not (nbits-1)))
       if (abs_nat < max_n)
         break
       end if
@@ -139,7 +142,7 @@ macro ebc.insert_index index_size, nat, cst
   if (width > 7) | ((width = 7) & (index_size = 16))
     err 'natural value too large for index size'
   end if
-  if (abs_cst >= 1 shl (index_size - 4 - (width*2)))
+  if (abs_cst >= 1 shl (index_size - 4 - (width*nbits)))
     err 'constant and natural values too large for index size'
   end if
   ; NB: we abuse the fact that 'di' inserts a 'dq' for size 3 or 4
@@ -219,7 +222,7 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
         end if
       end repeat
     else
-      is_reloc rel, op2
+      is_relative rel, op2
       if (rel) | (op2 and 0xFFFFFFFF00000000)
         _op2_width = 3
       else if (op2 and 0xFFFF0000)
@@ -266,7 +269,7 @@ macro ebc.move_general opcode, ops&
     define op1 _op1
     define op2 _op2
   else match _op1 (n1 =, c1) =, _op2 (_imm), ops
-    if (opcode <> 0x25) & (opcode <> 0x26)
+    if (_opcode <> 0x25) & (_opcode <> 0x26)
       err 'syntax error'
     end if
     op1_index = 1
@@ -289,7 +292,7 @@ macro ebc.move_general opcode, ops&
     define op1 _op1
     define op2 _op2
   else match _op1 =, _op2 (_imm), ops
-    if (opcode <> 0x25) & (opcode <> 0x26)
+    if (_opcode <> 0x25) & (_opcode <> 0x26)
       err 'syntax error'
     end if
     op2_index = 3
@@ -364,7 +367,7 @@ end macro
 
 macro ebc.math_general opcode, ops&
   local op1, op2, op1_reg_num, op2_reg_num, op1_indirect, op2_indirect
-  local op2_index, op2_nat, op2_cst, op2_imm, op2_imm_reloc
+  local op2_index, op2_nat, op2_cst, op2_imm, op2_imm_rel
   op2_nat = 0
   op2_cst = 0
   op2_imm = 0
@@ -394,14 +397,17 @@ macro ebc.math_general opcode, ops&
   if (op1_indirect > 1) | (op2_indirect > 1)
     err 'illegal register'
   end if
+  if (opcode >= 0x05) & (opcode <= 0x09) & (op1_indirect = 1)
+    err 'illegal indirect on first operand'
+  end if
   if (op2_index = 1) & (op2_indirect <> 1)
     err 'index specified for direct register operation'
   end if
   if (op2_index = 3) & (op2_indirect = 1)
     err 'immediate value specified for indirect register operation'
   end if
-  is_reloc op2_imm_reloc, op2_imm
-  if (~op2_imm_reloc) & (op2_nat = 0) & (op2_cst = 0) & (op2_imm = 0)
+  is_relative op2_imm_rel, op2_imm
+  if (~op2_imm_rel) & (op2_nat = 0) & (op2_cst = 0) & (op2_imm = 0)
     op2_index = 0
   end if
 
@@ -421,7 +427,7 @@ macro ebc.jmp_get_offset jmp_size, offset, ops&
   else match reg (imm), ops
     ; register + immediate => no offset
   else match addr, ops
-    is_reloc rel, addr
+    is_relative rel, addr
     if (rel)
       disp = addr - $
       if (disp and 0x1)
@@ -443,7 +449,7 @@ end macro
 
 macro ebc.jmp_call_push_pop opcode, opcode_flags, ops&
   local op1, op1_reg_num, op1_indirect, op1_index, op1_nat, op1_cst
-  local op1_imm, op1_imm_reloc, index_size, _opcode, is_op1_imm
+  local op1_imm, op1_imm_rel, index_size, _opcode, is_op1_imm
   op1_nat = 0
   op1_cst = 0
   op1_imm = 0
@@ -483,8 +489,8 @@ macro ebc.jmp_call_push_pop opcode, opcode_flags, ops&
     if (op1_indirect > 1)
       err 'illegal register'
     end if
-    is_reloc op1_imm_reloc, op1_imm
-    if (~op1_imm_reloc) & (op1_nat = 0) & (op1_cst = 0) & (op1_imm = 0)
+    is_relative op1_imm_rel, op1_imm
+    if (~op1_imm_rel) & (op1_nat = 0) & (op1_cst = 0) & (op1_imm = 0)
       op1_index = 0
     end if
     if (op1_index = 1) & (op1_indirect <> 1)
@@ -527,7 +533,7 @@ end macro
 
 macro ebc.cmp_immediate opcode, width, ops&
   local op1, op2, op1_reg_num, op1_indirect, op1_index
-  local op1_nat, op1_cst, op2_width, rel
+  local op1_imm, op1_nat, op1_cst, op2_width, rel
   op1_nat = 0
   op1_cst = 0
   op2_width = width
@@ -538,6 +544,8 @@ macro ebc.cmp_immediate opcode, width, ops&
     define op2 _op2
     op1_nat = n1
     op1_cst = c1
+  else match _op1 (_imm) =, _op2, ops
+    err 'illegal addressing mode for operand 1'
   else match _op1 =, _op2, ops
     op1_index = 0
     define op1 _op1
@@ -557,7 +565,7 @@ macro ebc.cmp_immediate opcode, width, ops&
     op1_index = 0
   end if
   if (op2_width = -1)
-    is_reloc rel, op2
+    is_relative rel, op2
     if (rel) | (op2 and 0xFFFF0000)
       op2_width = 1
     else

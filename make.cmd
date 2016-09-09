@@ -2,13 +2,23 @@
 set include=include
 del /q efi64.efi >NUL 2>&1
 
-if [%1]==[debug] (
-  fasmg debug.asm debug.efi
-) else (
-  fasmg hello.asm hello.efi
-)
+if [%1]==[debug] goto debug
+if [%1]==[full] goto full
+
+:debug
+fasmg debug.asm debug.efi
+goto next
+
+:full
+fasmg full.asm full.efi
+goto next
+
+fasmg hello.asm hello.efi
+
+:next
 if not %errorlevel%==0 goto end
 if [%1]==[] goto end
+if [%1]==[full] goto end
 
 set UEFI_EXT=x64
 set QEMU_ARCH=x86_64
