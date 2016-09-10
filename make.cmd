@@ -5,7 +5,6 @@ set UEFI_EXT=x64
 set QEMU_ARCH=x86_64
 set QEMU_PATH=C:\Program Files\qemu\
 set QEMU_OPTS=-net none -monitor none -parallel none
-set QEMU_EXE=qemu-system-%QEMU_ARCH%w.exe
 set FILE=hello
 set RUN_QEMU=
 set RUN_DEBUGGER=
@@ -51,6 +50,7 @@ set OVMF_BIOS=OVMF_%UEFI_EXT%.fd
 if not exist %OVMF_BIOS% (
   set OVMF_BIOS=OVMF.fd
 )
+set QEMU_EXE=qemu-system-%QEMU_ARCH%w.exe
 
 if [%RUN_QEMU%]==[] goto end
 
@@ -60,7 +60,8 @@ if not exist %OVMF_BIOS% (
 )
 
 if not exist image\efi\boot mkdir image\efi\boot
-del image\efi\boot\boot%UEFI_EXT%.efi > NUL 2>&1
+del image\efi\boot\boot*.efi > NUL 2>&1
+del image\efi\boot\startup.nsh > NUL 2>&1
 if not [%RUN_DEBUGGER%]==[] (
   echo fs0: > image\efi\boot\startup.nsh
   echo cd efi\boot\ >> image\efi\boot\startup.nsh

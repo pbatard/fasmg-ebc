@@ -42,17 +42,19 @@ EfiMain:
 WaitForKey:
   PUSHn  R2
   PUSHn  R1
-  CALLEX @R1(+1,+0)          ; SystemTable->ConIn->ReadKeyStroke()
+  CALLEX @R1(+1,+0)         ; SystemTable->ConIn->ReadKeyStroke()
   POPn   R1
   POPn   R2
-  MOVI   R3, EFI_NOT_READY
-  CMPeq  R7, R3
+  MOVI   R3, EFI64_NOT_READY
+  CMPeq  R7, R3             ; NB: we must test both the 32 and 64-bit status codes
+  JMPcs  WaitForKey
+  CMPI32deq R7, EFI32_NOT_READY
   JMPcs  WaitForKey
 
   MOVn   R6, @R0(+1,+16)    ; SystemTable
   MOVn   R6, @R6(+8,+24)    ; SystemTable->RuntimeServices
   MOVI   R1, EfiResetShutdown
-  MOVI   R2, EFI_SUCCESS
+  MOVI   R2, EFI64_SUCCESS
   MOVI   R3, 0
   PUSHn  R3
   PUSHn  R3
