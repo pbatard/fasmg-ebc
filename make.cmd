@@ -1,32 +1,58 @@
 @echo off
 set include=include
-del /q efi64.efi >NUL 2>&1
-
-if [%1]==[debug] goto debug
-if [%1]==[full] goto full
-
-:debug
-fasmg debug.asm debug.efi
-goto next
-
-:full
-fasmg full.asm full.efi
-goto next
-
-fasmg hello.asm hello.efi
-
-:next
-if not %errorlevel%==0 goto end
-if [%1]==[] goto end
-if [%1]==[full] goto end
 
 set UEFI_EXT=x64
 set QEMU_ARCH=x86_64
-
 set QEMU_PATH=C:\Program Files\qemu\
 set QEMU_OPTS=-net none -monitor none -parallel none
 set QEMU_EXE=qemu-system-%QEMU_ARCH%w.exe
-set OVMF_BIOS=OVMF.fd
+set FILE=hello
+set RUN_QEMU=
+set RUN_DEBUGGER=
+
+:loop
+if [%1]==[] goto next
+if [%1]==[debug] (
+  if not exist "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" (
+    echo EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi is missing!
+    goto end
+  )
+  set RUN_QEMU=1
+  set RUN_DEBUGGER=1
+) else if [%1]==[qemu] (
+  if not exist "%QEMU_PATH%" (
+    echo %QEMU_PATH% is missing!
+    goto end
+  )
+  set RUN_QEMU=1
+) else if [%1]==[ia32] (
+  set UEFI_EXT=ia32
+  set QEMU_ARCH=i386
+) else if [%1]==[arm] (
+  set UEFI_EXT=arm
+  set QEMU_ARCH=arm
+  set QEMU_OPTS=-M virt -cpu cortex-a15 %QEMU_OPTS%
+) else (
+  set FILE=%1
+  if not exist "%1.asm" (
+    echo %1.asm does not exist!
+    goto end
+  )
+)
+shift
+goto loop
+
+:next
+echo fasmg %FILE%.asm %FILE%.efi
+fasmg %FILE%.asm %FILE%.efi
+if not %errorlevel%==0 goto end
+
+set OVMF_BIOS=OVMF_%UEFI_EXT%.fd
+if not exist %OVMF_BIOS% (
+  set OVMF_BIOS=OVMF.fd
+)
+
+if [%RUN_QEMU%]==[] goto end
 
 if not exist %OVMF_BIOS% (
   echo %OVMF_BIOS% is missing!
@@ -34,20 +60,16 @@ if not exist %OVMF_BIOS% (
 )
 
 if not exist image\efi\boot mkdir image\efi\boot
-echo fs0: > image\efi\boot\startup.nsh
-echo cd efi\boot\ >> image\efi\boot\startup.nsh
-if [%1]==[debug] (
-  copy debug.efi image\efi\boot >NUL
-  if not exist "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" (
-    echo EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi is missing!
-    goto end
-  )
-  copy "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" image\efi\boot >NUL
-  echo EbcDebugger.efi >> image\efi\boot\startup.nsh
-  echo debug.efi >> image\efi\boot\startup.nsh
+del image\efi\boot\boot%UEFI_EXT%.efi > NUL 2>&1
+if not [%RUN_DEBUGGER%]==[] (
+  echo fs0: > image\efi\boot\startup.nsh
+  echo cd efi\boot\ >> image\efi\boot\startup.nsh
+  copy %FILE%.efi image\efi\boot >NUL
+  copy "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" image\efi\boot\EbcDebugger_%UEFI_EXT%.efi >NUL
+  echo EbcDebugger_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
+  echo %FILE%.efi >> image\efi\boot\startup.nsh
 ) else (
-  copy hello.efi image\efi\boot >NUL
-  echo hello.efi >> image\efi\boot\startup.nsh
+  copy %FILE%.efi image\efi\boot\boot%UEFI_EXT%.efi >NUL
 )
 
 "%QEMU_PATH%%QEMU_EXE%" %QEMU_OPTS% -L . -bios %OVMF_BIOS% -hda fat:image

@@ -50,8 +50,9 @@ gets assembled as `MOVInd R1, (+2,+4096)`.
 ## Assembly and testing (on Windows)
 
 * Make sure fasmg is in your path, or copy `fasmg.exe` to the current directory
-* Run `make`
-* Additionally, if you have Qemu installed, you can extract the [latest x64 OVMF](http://www.tianocore.org/ovmf/)
-  into the root directory, and run `make qemu`.
-* Also, if you have extracted the EBC Debugger into the root directory, you can add your own assembly
-  statements into `debug.asm` and run `make debug` to validate the encoded instructions.
+* Run `make` to compile the `hello.asm` sample
+* Additionally, you can compile one of the other samples by providing its short name (e.g. `make ebctest`)
+* If you have QEMU installed, you can extract the [latest x64 OVMF](http://www.tianocore.org/ovmf/)
+  into the root directory, and add the `qemu` parameter to run the application (e.g. `make hello qemu`)
+* Also, if you have extracted the EBC Debugger into the root directory, you can add the `debug` parameter
+  to run the assembled executable through the debugger (e.g. `make ebctest debug`)
