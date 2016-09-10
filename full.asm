@@ -55,6 +55,7 @@ EfiMain:
   JMP64acs 0x8000000000000
   JMP @R1(0x80000+0x800000,7*9-56)
   JMP8cc (Exit-EfiMain+8)/2
+  JMPa -0x8000000000000000
 
   LOADSP [Flags], R7
   STORESP R1, [IP]
@@ -108,7 +109,7 @@ Exit:
   MOVsn @R0(-0x1FFF,-0xFFF), @R0(-0x1FFF,-0xFFF)
   
   MOVRELw R1, -12
-  MOVRELd @R1, EfiMain - $
+  MOVRELd @R1, EfiMain
   MOVREL @R1(+64,+4), 0x123456789ABCD
 
   RET

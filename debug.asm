@@ -11,11 +11,15 @@ entry EfiMain
 
 section '.text' code executable readable
 EfiMain:
-  JMP64acs 0x40000000
+  MOVI R1, 0xFFFF
+  MOVREL R1, Test
 Test:
-  JMPcc EfiMain
-  JMP R1(1234)
-  BREAK 0
+  MOVInw R1, (+12,+50)
+  MOVInw R1, (+0,+0)
+  JMP -0x100 + 2
+  JMP -0x80000000 + 6
+  MOVREL R0, -32768
+  JMPcs EfiMain
 
 section '.data' data readable writeable
 

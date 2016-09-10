@@ -151,19 +151,20 @@ end macro
 
 macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
   local op1, op2, op1_reg_num, op1_indirect, op1_index, op2_index, index_size
-  local op1_nat, op2_nat, op1_cst, op2_cst, opcode, ins_width, _op2_width, rel
+  local op1_nat, op2_nat, op1_cst, op2_cst, opcode, ins_width, _op2_width, op2_rel
   if (mov_width >= 0)
-    opcode = 0x37
+    opcode = 0x37 ; MOVI
     ins_width = mov_width
   else if (mov_width = -1)
-    opcode = 0x38
+    opcode = 0x38 ; MOVIn
     ins_width = 0
   else if (mov_width = -2)
-    opcode = 0x39
+    opcode = 0x39 ; MOVREL
     ins_width = 0
   end if
   op1_nat = 0
   op1_cst = 0
+  op2_rel = 0
 
   match _op1 (n1 =, c1) =, (n2 =, c2), ops
     if (mov_width <> -1)
@@ -171,7 +172,6 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
     end if
     op1_index = 1
     define op1 _op1
-    define op2 _op2
     op1_nat = n1
     op1_cst = c1
     op2_nat = n2
@@ -179,7 +179,7 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
   else match _op1 (n1 =, c1) =, _op2, ops
     op1_index = 1
     define op1 _op1
-    define op2 _op2
+    op2 = _op2
     op1_nat = n1
     op1_cst = c1
   else match _op1 =, ( n2 =, c2), ops
@@ -193,7 +193,7 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
   else match _op1 =, _op2, ops
     op1_index = 0
     define op1 _op1
-    define op2 _op2
+    op2 = _op2
   else
     err 'syntax error'
   end match
@@ -209,8 +209,11 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
     op1_index = 0
   end if
   _op2_width = op2_width
+  if (opcode <> 0x38)
+    is_relative op2_rel, op2
+  end if
   if (_op2_width = -1)
-    if (mov_width = -1)
+    if (opcode = 0x38) ; MOVIn
       ebc.get_index_size index_size, op2_nat, op2_cst
       if (index_size > 64)
         err 'constant and natural values too large for index encoding'
@@ -222,15 +225,39 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
         end if
       end repeat
     else
-      is_relative rel, op2
-      if (rel) | (op2 and 0xFFFFFFFF00000000)
+      if (opcode = 0x39) ; MOVREL
+        local _op2
+        _op2 = op2
+        repeat 3 i:1
+          if (op2_rel) ; account for the instruction size
+            _op2 = op2 - $ - 2 - (2*op1_index) - (1 shl i)
+          end if
+          ; eg: (_op2 >= -0x8000) & (_op2 < 0x8000)
+          if (_op2 >= -(1 shl ((8 shl i)-1))) & (_op2 < (1 shl ((8 shl i)-1)))
+            _op2_width = i
+            op2 = _op2
+            break;
+          end if
+        end repeat
+        if (_op2_width < 0)
+          err 'value is too large'
+        end if
+      else if (op2_rel)
         _op2_width = 3
-      else if (op2 and 0xFFFF0000)
+      else if (op2 >= -0x8000) & (op2 < 0x10000) ; NB: We assume that positive immediates => unsigned operations
+        _op2_width = 1
+      else if (op2 >= -0x80000000) & (op2 < 0x100000000)
         _op2_width = 2
       else
-        _op2_width = 1
+         if (op2 < -0x8000000000000000) | (op2 > 0x10000000000000000)
+           err 'value is too large'
+         end if
+        _op2_width = 3
       end if
     end if
+  else if (opcode = 0x39) & (op2_rel) ; MOVREL
+    ; Compute the offset
+    op2 = op2 - $ - 2 - (2*op1_index) - (1 shl _op2_width)
   end if
 
   db _op2_width shl 6 + opcode
@@ -238,10 +265,17 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
   if (op1_index = 1)
     ebc.insert_index 16, op1_nat, op1_cst
   end if
-  if (mov_width <> -1)
-    di _op2_width, op2
-  else
+  if (opcode = 0x38) ; MOVIn
     ebc.insert_index (1 shl _op2_width)*8, op2_nat, op2_cst
+  else
+    if (op2_rel)
+      if (op2_width > 0) & (op2_width < 2)
+        err 'move size is too small'
+      end if
+    else if ((op2 < -(1 shl ((8 shl _op2_width)-1))) | (op2 >= (1 shl (8 shl _op2_width))))
+      err 'value is too large'
+    end if
+    di _op2_width, op2
   end if
 end macro
 
@@ -434,16 +468,21 @@ macro ebc.jmp_get_offset jmp_size, offset, ops&
       if (disp and 0x1)
         err 'JMP target must be aligned to word boundary'
       end if
-      if ((disp/2) <= 0x80) | ((disp/2) >= -0x80)
-        offset = disp/2 - 1
-        jmp_size = 8
-      else if ((disp-6) < 0x80000000) | ((disp-6) > -0x80000000)
-        jmp_size = 32
-        offset = disp - 6
-      else
-        jmp_size = 64
-        offset = disp - 10
+    else
+      disp = addr
+    end if
+    if ((disp/2 - 1) >= -0x80) & ((disp/2 - 1) < 0x80)
+      offset = disp/2 - 1
+      jmp_size = 8
+    else if ((disp - 6) >= -0x80000000) & ((disp - 6) < 0x80000000)
+      jmp_size = 32
+      offset = disp - 6
+    else
+      if ((disp - 10) < -0x8000000000000000) | ((disp - 10) >= 0x8000000000000000)
+        err 'value is too large'
       end if
+      jmp_size = 64
+      offset = disp - 10
     end if
   end match
 end macro
