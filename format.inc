@@ -69,6 +69,7 @@ macro format? clause
 			end match
 		end while
 		include 'format/pe.inc'
+		use32
 	else match =PE64? settings, clause:
 		PE.Settings.Magic = 0x20B
 		PE.Settings.Machine = IMAGE_FILE_MACHINE_AMD64
@@ -104,7 +105,6 @@ macro format? clause
 				PE.Settings.Stub = stub
 				break
 			else
-
 				match =GUI? more, seq
 					PE.Settings.Subsystem = IMAGE_SUBSYSTEM_WINDOWS_GUI
 					redefine seq more
@@ -205,6 +205,7 @@ macro format? clause
 			ELF.Settings.ABI = brand
 		end match
 		include 'format/elfexe.inc'
+		use32
 	else match =ELF64? =executable? settings, clause:
 		ELF.Settings.Class = ELFCLASS64
 		ELF.Settings.Machine = EM_X86_64
@@ -221,8 +222,10 @@ macro format? clause
 		use64
 	else match =ELF?, clause
 		include 'format/elf32.inc'
+		use32
 	else match =ELF64?, clause
 		include 'format/elf64.inc'
+		use64
 	else
 		err 'invalid argument'
 	end match

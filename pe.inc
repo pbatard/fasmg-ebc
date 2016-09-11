@@ -277,17 +277,22 @@ namespace PE
 		.HEADER_LENGTH = $
 		.STACK_LENGTH = 100h
 
-		.entry:
-;		      use16
-;		      push    cs
-;		      pop     ds
-;		      mov     dx,.message - .entry
-;		      mov     ah,9
-;		      int     21h
-;		      mov     ax,4C01h
-;		      int     21h
+		namespace Stub
 
-		.message db 'This program cannot be run in DOS mode.',0Dh,0Ah,24h
+		      include '../8086.inc'
+
+		start:
+		      push    cs
+		      pop     ds
+		      mov     dx,message - start
+		      mov     ah,9
+		      int     21h
+		      mov     ax,4C01h
+		      int     21h
+
+		message db 'This program cannot be run in DOS mode.',0Dh,0Ah,24h
+
+		end namespace
 
 		align 16
 
@@ -383,7 +388,6 @@ namespace PE
 	FILE_OFFSET = $%
 	SECTION_BASE = IMAGE_BASE + FIRST_SECTION_RVA
 	org SECTION_BASE
-;	use32
 
 	store SECTION_BASE-IMAGE_BASE at PE:OptionalHeader.AddressOfEntryPoint
 	store SECTION_BASE-IMAGE_BASE at PE:SectionTable.VirtualAddress
