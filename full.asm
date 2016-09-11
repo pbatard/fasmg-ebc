@@ -26,10 +26,11 @@ EfiMain:
   NEG R7, R6(0xFFFF)
   NOT32 R3, R1(-56)
   OR64 @R4, R1(-0x8000)
-  SHL @R2, @R0(-0x12,-0x30)
+  SHL @R2, R0(-0x12,-0x30)
   SHR32 R1, @R1(0,EfiMain-$)
   SUB64 @R0, R1(0x1000*0x08)
   XOR32 @R1, @R1(-12, EfiMain-Exit)
+  ADD R7, R6(+0,+1)
 
   CALL32 R1
   CALL32 R1(EfiMain)
@@ -42,7 +43,7 @@ EfiMain:
   CMP64lte R1, @R0
   CMPgte R1, R4(-5678)
   CMP32ulte R1, @R4(-12,-124)
-  CMP64ugte R2, @R4(-0,+60)
+  CMP64ugte R2, R4(-0,+60)
   CMPI32weq @R1, 1234 - 5678
   CMPI64dlte R2, 0x8000000
   CMPIgte @R3(+12,+68), 0x8000000
@@ -62,6 +63,7 @@ EfiMain:
   STORESP R2, [Flags]
   POP32 R1
   POP64 R3(1234)
+  POP32 R1(+1,+8)
   POP @R4(512,2)
   POPn @R5(-11,-32)
   PUSH R0

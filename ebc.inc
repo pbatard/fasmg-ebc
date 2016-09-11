@@ -80,16 +80,16 @@ macro is_immediate ret, ops&
   end match
 end macro
 
-macro ebc.parse_register reg_num, indirect_or_vm, reg
+macro ebc.parse_register reg_num, ret, reg
   local value
   value = +reg
   reg_num = value metadata 1 - R
   if (reg_num >= 0x800)
-    indirect_or_vm = 2
+    ret = 2 ; indicates a VM register
   else if (reg_num >= 0x80)
-    indirect_or_vm = 1
+    ret = 1
   else
-    indirect_or_vm = 0
+    ret = 0
   end if
   reg_num = (reg_num and 0x07)
 end macro
@@ -345,8 +345,7 @@ macro ebc.move_general opcode, ops&
   if (op1_indirect > 1) | (op2_indirect > 1)
     err 'illegal register'
   end if
-  ; MOV and MOVn accept direct indexed for op2 (e.g. 'MOV R0, R0(+1,+8)'), but *not* MOVsn
-  if ((op1_index = 1) & (op1_indirect <> 1)) | (((_opcode = 0x25) | (_opcode = 0x26)) & (op2_index = 1) & (op2_indirect <> 1))
+  if (op1_index = 1) & (op1_indirect <> 1)
     err 'illegal direct register indexed operation'
   else if (op2_index = 3) & (op2_indirect = 1)
     err 'immediate value specified for indirect register operation'
@@ -434,9 +433,6 @@ macro ebc.math_general opcode, ops&
   end if
   if (opcode >= 0x05) & (opcode <= 0x09) & (op1_indirect = 1)
     err 'illegal indirect on first operand'
-  end if
-  if (op2_index = 1) & (op2_indirect <> 1)
-    err 'illegal direct register indexed operation'
   end if
   if (op2_index = 3) & (op2_indirect = 1)
     err 'immediate value specified for indirect register operation'
