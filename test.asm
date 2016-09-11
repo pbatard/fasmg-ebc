@@ -6,7 +6,7 @@ include 'ebc.inc'
 include 'efi.inc'
 include 'format.inc'
 
-format peebc dll efi
+format peebc efi
 entry EfiMain
 
 section '.text' code executable readable

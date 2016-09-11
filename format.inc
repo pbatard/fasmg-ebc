@@ -143,55 +143,31 @@ macro format? clause
 		PE.Settings.Magic = 0x20B
 		PE.Settings.Machine = IMAGE_FILE_MACHINE_EBC
 		PE.Settings.Characteristics = IMAGE_FILE_EXECUTABLE_IMAGE or IMAGE_FILE_32BIT_MACHINE
-		PE.Settings.DllCharacteristics = 0
+		PE.Settings.DllCharacteristics = IMAGE_FILE_DLL
 		PE.Settings.MajorSubsystemVersion = 5
 		PE.Settings.MinorSubsystemVersion = 0
-		local seq
+		PE.Settings.Stub = "stub.com"
 		define seq settings
 		while 1
 			match :, seq
 				break
-			else match =DLL? more, seq
-				PE.Settings.Characteristics = PE.Settings.Characteristics or IMAGE_FILE_DLL
+			else match =EFI? more, seq
+				PE.Settings.Subsystem = IMAGE_SUBSYSTEM_EFI_APPLICATION
 				redefine seq more
-			else match =large? more, seq
-				PE.Settings.Characteristics = PE.Settings.Characteristics or IMAGE_FILE_LARGE_ADDRESS_AWARE
+			else match =EFIboot? more, seq
+				PE.Settings.Subsystem = IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER
 				redefine seq more
-			else match =WDM? more, seq
-				PE.Settings.DllCharacteristics = PE.Settings.DllCharacteristics or IMAGE_DLL_CHARACTERISTICS_WDM_DRIVER
+			else match =EFIruntime? more, seq
+				PE.Settings.Subsystem = IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER
 				redefine seq more
-			else match =NX? more, seq
-				PE.Settings.DllCharacteristics = PE.Settings.DllCharacteristics or IMAGE_DLL_CHARACTERISTICS_NX_COMPAT
-				redefine seq more
-			else match =at? base =on? stub :, seq
-				PE.Settings.ImageBase = base
-				PE.Settings.Stub = stub
-				break
-			else match =at? base :, seq
-				PE.Settings.ImageBase = base
-				break
-			else match =on? stub :, seq
-				PE.Settings.Stub = stub
-				break
 			else
-				match =EFI? more, seq
-					PE.Settings.Subsystem = IMAGE_SUBSYSTEM_EFI_APPLICATION
-					redefine seq more
-				else match =EFIboot? more, seq
-					PE.Settings.Subsystem = IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER
-					redefine seq more
-				else match =EFIruntime? more, seq
-					PE.Settings.Subsystem = IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER
-					redefine seq more
-				else
-					err 'invalid argument'
-					break
-				end match
-				match V.v more, seq
-					PE.Settings.MajorSubsystemVersion = V
-					PE.Settings.MinorSubsystemVersion = v
-					redefine seq more
-				end match
+				err 'invalid argument'
+				break
+			end match
+			match V.v more, seq
+				PE.Settings.MajorSubsystemVersion = V
+				PE.Settings.MinorSubsystemVersion = v
+				redefine seq more
 			end match
 		end while
 		include 'pe.inc'
