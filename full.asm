@@ -32,12 +32,11 @@ EfiMain:
   XOR32 @R1, @R1(-12, EfiMain-Exit)
 
   CALL32 R1
-  CALL32a R1(Exit - EfiMain)
+  CALL32 R1(EfiMain)
+  CALL64 0x1234567812345678
   CALL 0x123456
-  CALL64a (Exit - EfiMain)
   CALLEX Exit + 2
-  CALLEX32a @R0(Exit - EfiMain, 1)
-  CALLEX64a Exit
+  CALLEX32 @R0(Exit - EfiMain, 1)
 
   CMP32eq R1, R0
   CMP64lte R1, @R0
@@ -51,11 +50,12 @@ EfiMain:
   CMPI64dugte R2, EfiMain
 
   JMP Exit
-  JMP32cc R1((Exit-EfiMain+8)/2)
-  JMP64acs 0x8000000000000
+  JMP32cc R1(Exit)
+  JMP32cc R1(0x12345678)
+  JMP64cs 0x8000000000000
   JMP @R1(0x80000+0x800000,7*9-56)
-  JMP8cc (Exit-EfiMain+8)/2
-  JMPa -0x8000000000000000
+  JMP8cc Exit
+  JMP -0x8000000000000000
 
   LOADSP [Flags], R7
   STORESP R1, [IP]

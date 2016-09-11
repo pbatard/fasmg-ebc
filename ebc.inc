@@ -455,119 +455,212 @@ macro ebc.math_general opcode, ops&
   end if
 end macro
 
-macro ebc.jmp_get_offset jmp_size, offset, ops&
-  jmp_size = -1
-  match reg (n =, c), ops
-    ; indexed => no offset
-  else match reg (imm), ops
-    ; register + immediate => no offset
-  else match addr, ops
-    is_relative rel, addr
-    if (rel)
-      disp = addr - $
-      if (disp and 0x1)
-        err 'JMP target must be aligned to word boundary'
-      end if
-    else
-      disp = addr
-    end if
-    if ((disp/2 - 1) >= -0x80) & ((disp/2 - 1) < 0x80)
-      offset = disp/2 - 1
-      jmp_size = 8
-    else if ((disp - 6) >= -0x80000000) & ((disp - 6) < 0x80000000)
-      jmp_size = 32
-      offset = disp - 6
-    else
-      if ((disp - 10) < -0x8000000000000000) | ((disp - 10) >= 0x8000000000000000)
-        err 'value is too large'
-      end if
-      jmp_size = 64
-      offset = disp - 10
-    end if
-  end match
-end macro
-
-macro ebc.jmp_call_push_pop opcode, opcode_flags, ops&
-  local op1, op1_reg_num, op1_indirect, op1_index, op1_nat, op1_cst
-  local op1_imm, op1_imm_rel, index_size, _opcode, is_op1_imm
+macro ebc.push_pop opcode, ops&
+  local op1, op1_reg_num, op1_indirect, op1_index
+  local op1_nat, op1_cst, op1_imm, op1_rel, index_size
   op1_nat = 0
   op1_cst = 0
   op1_imm = 0
-  _opcode = opcode and 0xff
-  is_immediate is_op1_imm, ops
 
-  if ((opcode_flags < 0x80) & (opcode and 0x40)) | ((opcode >= 0x100) & (is_op1_imm))
-    _opcode = _opcode or 0x40
-    index_size = 64
+  match _op1 (n1 =, c1), ops
+    op1_index = 1
+    define op1 _op1
+    op1_nat = n1
+    op1_cst = c1
+  else match _op1 (_imm), ops
     op1_index = 3
-    op1_reg_num = 0
-    op1_indirect = 0
-    op1_imm = ops
+    define op1 _op1
+    op1_imm = _imm
   else
-    if (opcode_flags >= 0x80)
-      index_size = 16
+    op1_index = 0
+    define op1 ops
+  end match
+
+  ebc.parse_register op1_reg_num, op1_indirect, op1
+  if (op1_indirect > 1)
+    err 'illegal register'
+  end if
+  if (op1_nat = 0) & (op1_cst = 0) & (op1_imm = 0)
+    op1_index = 0
+  end if
+  if (op1_index = 3) & (op1_indirect = 1)
+    err 'immediate value specified for indirect register operation'
+  end if
+
+  db (op1_index and 1) shl 7 + opcode
+  db op1_indirect shl 3 + op1_reg_num
+  if (op1_index = 1)
+    ebc.insert_index 16, op1_nat, op1_cst
+  else if (op1_index = 3)
+    dw op1_imm
+  end if
+end macro
+
+macro ebc.jump_get_offset jmp_size, rel, offset, ops&
+  local min_jmp_size, addr
+  min_jmp_size = jmp_size
+  rel = 0
+
+  match reg (n =, c), ops
+    ; indexed => no offset
+    jmp_size = -1
+  else match reg (imm), ops
+    addr = imm
+    jmp_size = 0
+  else match imm, ops
+    local is_imm
+    is_immediate is_imm, imm
+    assert (is_imm = 1)
+    if (is_imm)
+      addr = imm
+      jmp_size = 0
     else
-      index_size = 32
+      ; register => no offset
+      jmp_size = -1
     end if
-    match _op1 (n1 =, c1), ops
-      op1_index = 1
-      define op1 _op1
-      define op2 _op2
-      op1_nat = n1
-      op1_cst = c1
-    else match _op1 (_imm), ops
+  else
+    err 'internal error'
+  end match
+
+  if (jmp_size = 0) ; we have a value for which to compute the offset
+    is_relative rel, addr
+    if (rel) ; relative address
+      disp = addr - $
+      if (disp and 0x1)
+        err 'target address must be aligned to word boundary'
+      end if
+      if ((disp/2 - 1) >= -0x80) & ((disp/2 - 1) < 0x80) & (min_jmp_size < 32)
+        jmp_size = 8
+        offset = disp/2 - 1
+      else if ((disp - 6) >= -0x80000000) & ((disp - 6) < 0x80000000) & (min_jmp_size < 64)
+        jmp_size = 32
+        offset = disp - 6
+      else
+        if ((disp - 10) < -0x8000000000000000) | ((disp - 10) >= 0x8000000000000000)
+          err 'value is too large'
+        end if
+        jmp_size = 64
+        offset = disp - 10
+      end if
+    else ; absolute address
+      offset = addr
+      if (addr >= -0x80000000) & (addr < 0x80000000)
+        jmp_size = 32
+      else
+        jmp_size = 64
+      end if
+    end if
+  end if
+end macro
+
+macro ebc.jump_call opcode, opcode_flags, ops&
+  local op1, op1_reg_num, op1_indirect, op1_index
+  local op1_nat, op1_cst, op1_imm, op1_rel, jmp_size
+  op1_nat = 0
+  op1_cst = 0
+  op1_rel = 0
+  jmp_size = 32
+  if (opcode and 0x40)
+    jmp_size = 64
+  end if
+
+  match _op1 (n1 =, c1), ops
+    if (jmp_size = 64)
+      err 'illegal register indexed operation'
+    end if
+    op1_index = 1
+    define op1 _op1
+    op1_nat = n1
+    op1_cst = c1
+  else match _op1 (_imm), ops
+    if (jmp_size = 64)
+      err 'illegal register immediate operation'
+    end if
+    op1_index = 3
+    define op1 _op1
+    op1_imm = _imm
+  else
+    local is_imm
+    is_immediate is_imm, ops
+    if (is_imm)
+      if (jmp_size <> 64)
+        err 'illegal immediate operation'
+      end if
       op1_index = 3
-      define op1 _op1
-      define op2 _op2
-      op1_imm = _imm
+      op1_imm = ops
+      define op1 R0 ; need to define one, but will be ignored
     else
       op1_index = 0
       define op1 ops
-    end match
+    end if
+  end match
 
-    ebc.parse_register op1_reg_num, op1_indirect, op1
-    if (op1_indirect > 1)
-      err 'illegal register'
-    end if
-    is_relative op1_imm_rel, op1_imm
-    if (~op1_imm_rel) & (op1_nat = 0) & (op1_cst = 0) & (op1_imm = 0)
-      op1_index = 0
-    end if
-    if (op1_index = 1) & (op1_indirect <> 1)
-      err 'illegal direct register indexed operation'
-    end if
-    if (op1_index = 3) & (op1_indirect = 1)
-      err 'immediate value specified for indirect register operation'
+  if (op1_index = 3)
+    ebc.jump_get_offset jmp_size, op1_rel, offset, op1_imm
+    if (jmp_size <> 32) & (jmp_size <> 64)
+      err 'internal error'
+    else if ((jmp_size = 32) & (opcode and 0x40)) | ((jmp_size = 64) & (~ opcode and 0x40))
+      err 'invalid jmp size'
+    else if (opcode = 0x43) & (op1_rel)
+      err 'illegal relative address'
     end if
   end if
 
-  db (op1_index and 1) shl 7 + _opcode
-  db (opcode_flags and 0x0F) shl 4 + op1_indirect shl 3 + op1_reg_num
+  ebc.parse_register op1_reg_num, op1_indirect, op1
+  if (op1_indirect > 1)
+    err 'illegal register'
+  end if
+  if (op1_index = 1) & (op1_nat = 0) & (op1_cst = 0)
+    op1_index = 0
+  end if
+  if (op1_index = 3) & (op1_indirect = 1)
+    err 'immediate value specified for indirect register operation'
+  end if
+
+  db (op1_index and 1) shl 7 + opcode
+  db (opcode_flags or op1_rel) shl 4 + op1_indirect shl 3 + op1_reg_num
   if (op1_index = 1)
-    ebc.insert_index index_size, op1_nat, op1_cst
+    ebc.insert_index 32, op1_nat, op1_cst
   else if (op1_index = 3)
-    di (index_size/16), op1_imm
+    di jmp_size/16, offset
   end if
 end macro
 
-macro ebc.jmp_short flags, imm8
-  local rel, disp
-  db flags shl 6 + 0x02, imm8
+macro ebc.jump_short flags, addr
+  local jmp_size, rel, offset
+  jmp_size = 8
+  ebc.jump_get_offset jmp_size, rel, offset, addr
+  if (rel <> 1)
+    err 'illegal absolute address'
+  end if
+  if (jmp_size <> 8)
+    err 'internal error'
+  end if
+  db flags shl 6 + 0x02, offset
 end macro
 
-macro ebc.jmp_auto flags, ops&
-  local jmp_size, offset
-  ebc.jmp_get_offset jmp_size, offset, ops
-  if (jmp_size > 0)
-    if (jmp_size = 8)
-       ebc.jmp_short (flags shr 2), offset
-     else if (jmp_size = 32)
-       ebc.jmp_call_push_pop 0x01, flags, R0(offset)
-     else
-       ebc.jmp_call_push_pop 0x41, flags, offset
-     end if
+macro ebc.jump_call_auto opcode, flags, ops&
+  local jmp_size, offset, imm, rel
+  if (opcode = 0x03)
+    jmp_size = 32 ; no CALL8
   else
-    ebc.jmp_call_push_pop 0x101, flags, ops
+    jmp_size = 8
+  end if
+
+  ebc.jump_get_offset jmp_size, rel, offset, ops
+  if (jmp_size >= 0)
+    if (jmp_size = 8)
+      if (opcode = 0x03)
+        err 'internal error'
+      end if
+      ebc.jump_short (flags shr 2), ops
+    else if (jmp_size = 32)
+      ebc.jump_call opcode, flags, R0(ops)
+    else
+      ebc.jump_call (0x40 or opcode), flags, ops
+    end if
+  else ; register or indexed => use the 32 bit version
+    ebc.jump_call opcode, flags, ops
   end if
 end macro
 
@@ -710,60 +803,35 @@ macro BREAK? code
 end macro
 
 macro CALL? ops&
-  ebc.jmp_call_push_pop 0x103, 0000b, ops
+  ebc.jump_call_auto 0x03, 0000b, ops
 end macro
 
 macro CALL32? ops&
-  ebc.jmp_call_push_pop 0x03, 0000b, ops
+  ebc.jump_call 0x03, 0000b, ops
 end macro
 
-macro CALL32a? ops&
-  ebc.jmp_call_push_pop 0x03, 0001b, ops
-end macro
-
-; NB: As per the specs, CALL[EX]64 is always absolute
 macro CALL64? ops&
-  ebc.jmp_call_push_pop 0x43, 0000b, ops
-end macro
-
-macro CALL64a? ops&
-  ebc.jmp_call_push_pop 0x43, 0000b, ops
+  ebc.jump_call 0x43, 0000b, ops
 end macro
 
 macro CALLEX? ops&
-  ebc.jmp_call_push_pop 0x103, 0010b, ops
+  ebc.jump_call_auto 0x03, 0010b, ops
 end macro
 
 macro CALLEX32? ops&
-  ebc.jmp_call_push_pop 0x03, 0010b, ops
+  ebc.jump_call 0x03, 0010b, ops
 end macro
 
 macro CALL32EX? ops&
-  ebc.jmp_call_push_pop 0x03, 0010b, ops
-end macro
-
-macro CALLEX32a? ops&
-  ebc.jmp_call_push_pop 0x03, 0011b, ops
-end macro
-
-macro CALL32EXa? ops&
-  ebc.jmp_call_push_pop 0x03, 0011b, ops
+  ebc.jump_call 0x03, 0010b, ops
 end macro
 
 macro CALLEX64? ops&
-  ebc.jmp_call_push_pop 0x43, 0010b, ops
+  ebc.jump_call 0x43, 0010b, ops
 end macro
 
 macro CALL64EX? ops&
-  ebc.jmp_call_push_pop 0x43, 0010b, ops
-end macro
-
-macro CALLEX64a? ops&
-  ebc.jmp_call_push_pop 0x43, 0010b, ops
-end macro
-
-macro CALL64EXa? ops&
-  ebc.jmp_call_push_pop 0x43, 0010b, ops
+  ebc.jump_call 0x43, 0010b, ops
 end macro
 
 macro CMPeq? ops&
@@ -1067,87 +1135,51 @@ macro EXTNDW64? ops&
 end macro
 
 macro JMP? ops&
-  ebc.jmp_auto 0001b, ops
-end macro
-
-macro JMPa? ops&
-  ebc.jmp_call_push_pop 0x101, 0000b, ops
+  ebc.jump_call_auto 0x01, 0001b, ops
 end macro
 
 macro JMPcs? ops&
-  ebc.jmp_auto 1101b, ops
-end macro
-
-macro JMPacs? ops&
-  ebc.jmp_call_push_pop 0x101, 1100b, ops
+  ebc.jump_call_auto 0x01, 1101b, ops
 end macro
 
 macro JMPcc? ops&
-  ebc.jmp_auto 1001b, ops
-end macro
-
-macro JMPacc? ops&
-  ebc.jmp_call_push_pop 0x101, 1000b, ops
+  ebc.jump_call_auto 0x01, 1001b, ops
 end macro
 
 macro JMP32? ops&
-  ebc.jmp_call_push_pop 0x01, 0001b, ops
-end macro
-
-macro JMP32a? ops&
-  ebc.jmp_call_push_pop 0x01, 0000b, ops
+  ebc.jump_call 0x01, 0000b, ops
 end macro
 
 macro JMP32cs? ops&
-  ebc.jmp_call_push_pop 0x01, 1101b, ops
-end macro
-
-macro JMP32acs? ops&
-  ebc.jmp_call_push_pop 0x01, 1100b, ops
+  ebc.jump_call 0x01, 1100b, ops
 end macro
 
 macro JMP32cc? ops&
-  ebc.jmp_call_push_pop 0x01, 1001b, ops
-end macro
-
-macro JMP32acc? ops&
-  ebc.jmp_call_push_pop 0x01, 1000b, ops
+  ebc.jump_call 0x01, 1000b, ops
 end macro
 
 macro JMP64? ops&
-  ebc.jmp_call_push_pop 0x41, 0001b, ops
-end macro
-
-macro JMP64a? ops&
-  ebc.jmp_call_push_pop 0x41, 0000b, ops
+  ebc.jump_call 0x41, 0000b, ops
 end macro
 
 macro JMP64cs? ops&
-  ebc.jmp_call_push_pop 0x41, 1101b, ops
-end macro
-
-macro JMP64acs? ops&
-  ebc.jmp_call_push_pop 0x41, 1100b, ops
+  ebc.jump_call 0x41, 1100b, ops
 end macro
 
 macro JMP64cc? ops&
-  ebc.jmp_call_push_pop 0x41, 1001b, ops
-end macro
-
-macro JMP64acc? ops&
-  ebc.jmp_call_push_pop 0x41, 1000b, ops
+  ebc.jump_call 0x41, 1000b, ops
 end macro
 
 macro JMP8? ops&
-  ebc.jmp_short 00b, ops
+  ebc.jump_short 00b, ops
 end macro
 
 macro JMP8cc? ops&
-  ebc.jmp_short 10b, ops
+  ebc.jump_short 10b, ops
 end macro
 
 macro JMP8cs? ops&
-  ebc.jmp_short 11b, ops
+  ebc.jump_short 11b, ops
 end macro
 
 macro LOADSP? ops&
@@ -1419,35 +1451,35 @@ macro OR64? ops&
 end macro
 
 macro POP? ops&
-  ebc.jmp_call_push_pop 0x6C, 0x80, ops
+  ebc.push_pop 0x6C, ops
 end macro
 
 macro POP32? ops&
-  ebc.jmp_call_push_pop 0x2C, 0x80, ops
+  ebc.push_pop 0x2C, ops
 end macro
 
 macro POP64? ops&
-  ebc.jmp_call_push_pop 0x6C, 0x80, ops
+  ebc.push_pop 0x6C, ops
 end macro
 
 macro POPn? ops&
-  ebc.jmp_call_push_pop 0x36, 0x80, ops
+  ebc.push_pop 0x36, ops
 end macro
 
 macro PUSH? ops&
-  ebc.jmp_call_push_pop 0x6B, 0x80, ops
+  ebc.push_pop 0x6B, ops
 end macro
 
 macro PUSH32? ops&
-  ebc.jmp_call_push_pop 0x2B, 0x80, ops
+  ebc.push_pop 0x2B, ops
 end macro
 
 macro PUSH64? ops&
-  ebc.jmp_call_push_pop 0x6B, 0x80, ops
+  ebc.push_pop 0x6B, ops
 end macro
 
 macro PUSHn? ops&
-  ebc.jmp_call_push_pop 0x35, 0x80, ops
+  ebc.push_pop 0x35, ops
 end macro
 
 macro RET?
