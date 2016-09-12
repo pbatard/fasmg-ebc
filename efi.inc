@@ -57,9 +57,142 @@ struc rn? count
   .: rn count
 end struc
 
-;
+; Data definitions, from UEFI specs
+
+struct BOOLEAN
+  db ?
+ends
+struct INT8
+  db ?
+ends
+struct UINT8
+  db ?
+ends
+struct INT16
+  dw ?
+ends
+struct UINT16
+  dw ?
+ends
+struct INT32
+  dd ?
+ends
+struct UINT32
+  dd ?
+ends
+struct INT64
+  dq ?
+ends
+struct UINT64
+  dq ?
+ends
+struct INTN
+  dn ?
+ends
+struct UINTN
+  dn ?
+ends
+struct CHAR8
+  db ?
+ends
+struct CHAR16
+  dw ?
+ends
+struct VOID_PTR
+  dn ?
+ends
+struct EFI_STATUS
+  dn ?
+ends
+struct EFI_HANDLE
+  dn ?
+ends
+
+
+; EfiMain() is handled like any other EBC CALL routine, therefore
+; we need to skip c=+16 bytes to access our parameters, due to the
+; following stack manipulation operations having been carried out:
+;   R0 = R0 - 8           ; -> +8
+;   PUSH64 ReturnAddress  ; -> +8
+; Knowing this, the setup for the two EfiMain() parameters are
+; 'ImageHandle' at (+0,+16) and 'SystemTable' at (+1,+16).
+struct EFI_MAIN_PARAMETERS
+  Reserved                     rb 16
+  ImageHandle                  VOID_PTR
+  SystemTable                  VOID_PTR
+ends
+
+struct EFI_TABLE_HEADER
+  Signature                    UINT64
+  Revision                     UINT32
+  HeaderSize                   UINT32
+  CRC32                        UINT32
+  Reserved                     UINT32
+ends
+
+struct EFI_SYSTEM_TABLE
+  Hdr                          EFI_TABLE_HEADER
+  FirmwareVendor               VOID_PTR
+  ; "Fun" rule of EBC structure index computations (as per UEFI Specs 2.6
+  ; Chapter 2.3.1)  "Internal (structure) data are implicitly padded to
+  ; achieve natural alignment."
+  ; This means that, 'FirmwareRevision' below, which is really an UINT32,
+  ; must be handled as a natural member when computed as an index value,
+  ; since we may have UINT32 + 4 bytes padding (= 64 bits) on x64, or
+  ; UINT32 + no padding (= 32 bits) on IA32 or ARM. 
+  ; Since our index computations are not that smart, we cheat by inserting
+  ; it as a straight UINTN...
+  FirmwareRevision             UINTN
+  ConsoleInHandle              EFI_HANDLE
+  ConIn                        VOID_PTR
+  ConsoleOutHandle             EFI_HANDLE
+  ConOut                       VOID_PTR
+  StandardErrorHandle          EFI_HANDLE
+  StdErr                       VOID_PTR
+  RuntimeServices              VOID_PTR
+  BootServices	               VOID_PTR
+  NumberOfTableEntries         UINTN
+  ConfigurationTable           VOID_PTR
+ends
+
+struct EFI_RUNTIME_SERVICES
+  Hdr                          EFI_TABLE_HEADER
+  GetTime                      VOID_PTR
+  SetTime                      VOID_PTR
+  GetWakeupTime                VOID_PTR
+  SetWakeupTime                VOID_PTR
+  SetVirtualAddressMap         VOID_PTR
+  ConvertPointer               VOID_PTR
+  GetVariable                  VOID_PTR
+  GetNextVariableName          VOID_PTR
+  SetVariable                  VOID_PTR
+  GetNextHighMonotonicCount    VOID_PTR
+  ResetSystem                  VOID_PTR
+  UpdateCapsule                VOID_PTR
+  QueryCapsuleCapabilities     VOID_PTR
+  QueryVariableInfo            VOID_PTR
+ends
+
+struct SIMPLE_TEXT_OUTPUT_INTERFACE
+  Reset                        VOID_PTR
+  OutputString                 VOID_PTR
+  TestString                   VOID_PTR
+  QueryMode                    VOID_PTR
+  SetMode                      VOID_PTR
+  SetAttribute                 VOID_PTR
+  ClearScreen                  VOID_PTR
+  SetCursorPosition            VOID_PTR
+  EnableCursor                 VOID_PTR
+  Mode                         VOID_PTR
+ends
+
+struct SIMPLE_TEXT_INPUT_INTERFACE
+  Reset                        VOID_PTR
+  ReadKeyStroke                VOID_PTR
+  WaitForKey                   VOID_PTR
+ends
+
 ; Symbols
-;
 
 ; 32 and 64 bit version are defined independently as a reminder that, if you
 ; call an external procedure, you may have to test for both set of return codes.
@@ -116,6 +249,9 @@ EFI32_ABORTED                   = EFI32_ERROR or 21
 EFI32_ICMP_ERROR                = EFI32_ERROR or 22
 EFI32_TFTP_ERROR                = EFI32_ERROR or 23
 EFI32_PROTOCOL_ERROR            = EFI32_ERROR or 24
+
+FALSE                           = 0
+TRUE                            = 1
 
 EfiResetCold                    = 0
 EfiResetWarm                    = 1

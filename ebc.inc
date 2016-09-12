@@ -545,12 +545,20 @@ macro ebc.jump_get_offset jmp_size, rel, offset, ops&
         jmp_size = 64
         offset = disp - 10
       end if
-    else ; absolute address
-      offset = addr
-      if (addr >= -0x80000000) & (addr < 0x80000000)
+    else ; absolute address or computed index
+      local is_imm
+      is_immediate is_imm, addr
+      if (is_imm) ; absolute address
+        offset = addr
+        if (addr >= -0x80000000) & (addr < 0x80000000)
+          jmp_size = 32
+        else
+          jmp_size = 64
+        end if
+      else ; computed index
         jmp_size = 32
-      else
-        jmp_size = 64
+        ; we return an offset > 32 bit to signal that this is a computed index
+        offset = 0x800000000
       end if
     end if
   end if
@@ -649,7 +657,11 @@ macro ebc.jump_call_auto opcode, flags, ops&
       end if
       ebc.jump_short (flags shr 2), ops
     else if (jmp_size = 32)
-      ebc.jump_call opcode, flags, R0(ops)
+      if (offset >= 0x100000000) ; computed index
+        ebc.jump_call opcode, flags, ops
+      else
+        ebc.jump_call opcode, flags, R0(ops)
+      end if
     else
       ebc.jump_call (0x40 or opcode), flags, ops
     end if

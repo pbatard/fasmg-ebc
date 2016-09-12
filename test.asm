@@ -11,15 +11,10 @@ entry EfiMain
 
 section '.text' code executable readable
 EfiMain:
-  JMP -0x8000000000000000
-  BREAK  3
-  BREAK  3
-  CALL32 R1
-  CALL EfiMain
-  JMP EfiMain
-  JMP32  R0(EfiMain)
-  CALL32  R0(EfiMain)
-  CALL64  0x1234567812345678
+  MOV    R1, @R1(EFI_SYSTEM_TABLE.ConOut)
+  ; And thank you, intel BUGGY EBC Debugger, for making me believe
+  ; we had an issue with CALL[EX] computed indexes... >_<
+  CALLEX @R1(EFI_SYSTEM_TABLE.ConOut)
 
 section '.data' data readable writeable
 
