@@ -156,10 +156,26 @@ macro ebc.parse_parenthesis index, nat, cst, imm, ops&
     cst = c
     imm = 0
   else
-    index = 3
-    nat = 0
-    cst = 0
-    imm = ops
+    local is_imm
+    is_immediate is_imm, ops
+    if (is_imm)
+      index = 3
+      nat = 0
+      cst = 0
+      imm = ops
+    else ; automated index computation
+      index = 1
+      nat = 0
+      cst = ops
+      imm = 0
+      repeat elementsof cst
+        if cst element % eq natural_word
+          nat = cst scale %
+          cst = cst - (nat * natural_word)
+          break
+        end if
+      end repeat 
+    end if
   end match
 end macro
 
