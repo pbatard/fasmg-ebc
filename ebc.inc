@@ -149,9 +149,23 @@ macro ebc.insert_index index_size, nat, cst
   di (index_size/16), sign shl (index_size-1) + width shl (index_size-4) + abs_cst shl (width*nbits) + abs_nat
 end macro
 
+macro ebc.parse_parenthesis index, nat, cst, imm, ops&
+  match n =, c, ops
+    index = 1
+    nat = n
+    cst = c
+    imm = 0
+  else
+    index = 3
+    nat = 0
+    cst = 0
+    imm = ops
+  end match
+end macro
+
 macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
-  local op1, op2, op1_reg_num, op1_indirect, op1_index, op2_index, index_size
-  local op1_nat, op2_nat, op1_cst, op2_cst, opcode, ins_width, _op2_width, op2_rel
+  local op1, op2, op1_reg_num, op1_indirect, op1_index, op2_index, index_size, op1_imm
+  local op2_imm, op1_nat, op2_nat, op1_cst, op2_cst, opcode, ins_width, _op2_width, op2_rel
   if (mov_width >= 0)
     opcode = 0x37 ; MOVI
     ins_width = mov_width
@@ -162,36 +176,42 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
     opcode = 0x39 ; MOVREL
     ins_width = 0
   end if
+  op1_index = 0
+  op2_index = 0
   op1_nat = 0
   op1_cst = 0
   op2_rel = 0
 
-  match _op1 (n1 =, c1) =, (n2 =, c2), ops
+  match _op1 (val1) =, (val2), ops
     if (mov_width <> -1)
       err 'syntax error'
     end if
-    op1_index = 1
     define op1 _op1
-    op1_nat = n1
-    op1_cst = c1
-    op2_nat = n2
-    op2_cst = c2
-  else match _op1 (n1 =, c1) =, _op2, ops
-    op1_index = 1
+    ebc.parse_parenthesis op1_index, op1_nat, op1_cst, op1_imm, val1
+    if (op1_index <> 1)
+      err 'syntax error'
+    end if
+    ebc.parse_parenthesis op2_index, op2_nat, op2_cst, op2_imm, val2
+    if (op2_index <> 1)
+      err 'syntax error'
+    end if
+  else match _op1 (val1) =, _op2, ops
     define op1 _op1
+    ebc.parse_parenthesis op1_index, op1_nat, op1_cst, op1_imm, val1
+    if (op1_index <> 1)
+      err 'syntax error'
+    end if
     op2 = _op2
-    op1_nat = n1
-    op1_cst = c1
-  else match _op1 =, ( n2 =, c2), ops
+  else match _op1 =, (val2), ops
     if (mov_width <> -1)
       err 'syntax error'
     end if
-    op1_index = 0
     define op1 _op1
-    op2_nat = n2
-    op2_cst = c2
+    ebc.parse_parenthesis op2_index, op2_nat, op2_cst, op2_imm, val2
+    if (op2_index <> 1)
+      err 'syntax error'
+    end if
   else match _op1 =, _op2, ops
-    op1_index = 0
     define op1 _op1
     op2 = _op2
   else
@@ -280,7 +300,7 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
 end macro
 
 macro ebc.move_general opcode, ops&
-  local op1, op2, op1_reg_num, op2_reg_num, op1_indirect, op2_indirect, op2_imm
+  local op1, op2, op1_reg_num, op2_reg_num, op1_indirect, op2_indirect, op1_imm, op2_imm
   local op1_index, op2_index, op1_nat, op2_nat, op1_cst, op2_cst, _opcode
   local index_size, index_size1, index_size2
   op1_index = 0
@@ -289,50 +309,36 @@ macro ebc.move_general opcode, ops&
   op2_nat = 0
   op1_cst = 0
   op2_cst = 0
+  op1_imm = 0
   op2_imm = 0
   index_size = 16
   _opcode = opcode and 0xff
 
-  match _op1 (n1 =, c1) =, _op2 (n2 =, c2), ops
-    op1_index = 1
-    op1_nat = n1
-    op1_cst = c1
-    op2_index = 1
-    op2_nat = n2
-    op2_cst = c2
+  match _op1 (val1) =, _op2 (val2), ops
     define op1 _op1
-    define op2 _op2
-  else match _op1 (n1 =, c1) =, _op2 (_imm), ops
-    if (_opcode <> 0x25) & (_opcode <> 0x26)
+    ebc.parse_parenthesis op1_index, op1_nat, op1_cst, op1_imm, val1
+    if (op1_index = 3)
       err 'syntax error'
     end if
-    op1_index = 1
-    op1_nat = n1
-    op1_cst = c1
-    op2_index = 3
-    define op1 _op1
     define op2 _op2
-    op2_imm = _imm
-  else match _op1 (n1 =, c1) =, _op2, ops
-    op1_index = 1
-    op1_nat = n1
-    op1_cst = c1
-    define op1 _op1
-    define op2 _op2
-  else match _op1 =, _op2 (n2 =, c2), ops
-    op2_index = 1
-    op2_nat = n2
-    op2_cst = c2
-    define op1 _op1
-    define op2 _op2
-  else match _op1 =, _op2 (_imm), ops
-    if (_opcode <> 0x25) & (_opcode <> 0x26)
+    ebc.parse_parenthesis op2_index, op2_nat, op2_cst, op2_imm, val2
+    if (op2_index = 3) & (_opcode <> 0x25) & (_opcode <> 0x26)
       err 'syntax error'
     end if
-    op2_index = 3
+  else match _op1 (val1) =, _op2, ops
+    define op1 _op1
+    ebc.parse_parenthesis op1_index, op1_nat, op1_cst, op1_imm, val1
+    if (op1_index = 3)
+      err 'syntax error'
+    end if
+    define op2 _op2
+  else match _op1 =, _op2 (val2), ops
     define op1 _op1
     define op2 _op2
-    op2_imm = _imm
+    ebc.parse_parenthesis op2_index, op2_nat, op2_cst, op2_imm, val2
+    if (op2_index = 3) & (_opcode <> 0x25) & (_opcode <> 0x26)
+      err 'syntax error'
+    end if
   else match _op1 =, _op2, ops
     define op1 _op1
     define op2 _op2
@@ -402,24 +408,16 @@ end macro
 macro ebc.math_general opcode, ops&
   local op1, op2, op1_reg_num, op2_reg_num, op1_indirect, op2_indirect
   local op2_index, op2_nat, op2_cst, op2_imm, op2_imm_rel
+  op2_index = 0
   op2_nat = 0
   op2_cst = 0
   op2_imm = 0
-  is_64 = 0
 
-  match _op1 =, _op2 (n2 =, c2), ops
-    op2_index = 1
+  match _op1 =, _op2 (val), ops
     define op1 _op1
     define op2 _op2
-    op2_nat = n2
-    op2_cst = c2
-  else match _op1 =, _op2 (_imm), ops
-    op2_index = 3
-    define op1 _op1
-    define op2 _op2
-    op2_imm = _imm
+    ebc.parse_parenthesis op2_index, op2_nat, op2_cst, op2_imm, val
   else match _op1 =, _op2, ops
-    op2_index = 0
     define op1 _op1
     define op2 _op2
   else
@@ -458,15 +456,9 @@ macro ebc.push_pop opcode, ops&
   op1_cst = 0
   op1_imm = 0
 
-  match _op1 (n1 =, c1), ops
-    op1_index = 1
+  match _op1 (val), ops
+    ebc.parse_parenthesis op1_index, op1_nat, op1_cst, op1_imm, val
     define op1 _op1
-    op1_nat = n1
-    op1_cst = c1
-  else match _op1 (_imm), ops
-    op1_index = 3
-    define op1 _op1
-    op1_imm = _imm
   else
     op1_index = 0
     define op1 ops
@@ -506,7 +498,6 @@ macro ebc.jump_get_offset jmp_size, rel, offset, ops&
   else match imm, ops
     local is_imm
     is_immediate is_imm, imm
-    assert (is_imm = 1)
     if (is_imm)
       addr = imm
       jmp_size = 0
@@ -552,6 +543,7 @@ end macro
 macro ebc.jump_call opcode, opcode_flags, ops&
   local op1, op1_reg_num, op1_indirect, op1_index
   local op1_nat, op1_cst, op1_imm, op1_rel, jmp_size
+  op1_index = 0
   op1_nat = 0
   op1_cst = 0
   op1_rel = 0
@@ -560,21 +552,12 @@ macro ebc.jump_call opcode, opcode_flags, ops&
     jmp_size = 64
   end if
 
-  match _op1 (n1 =, c1), ops
+  match _op1 (val), ops
+    define op1 _op1
+    ebc.parse_parenthesis op1_index, op1_nat, op1_cst, op1_imm, val
     if (jmp_size = 64)
       err 'illegal register indexed operation'
     end if
-    op1_index = 1
-    define op1 _op1
-    op1_nat = n1
-    op1_cst = c1
-  else match _op1 (_imm), ops
-    if (jmp_size = 64)
-      err 'illegal register immediate operation'
-    end if
-    op1_index = 3
-    define op1 _op1
-    op1_imm = _imm
   else
     local is_imm
     is_immediate is_imm, ops
@@ -586,7 +569,6 @@ macro ebc.jump_call opcode, opcode_flags, ops&
       op1_imm = ops
       define op1 R0 ; need to define one, but will be ignored
     else
-      op1_index = 0
       define op1 ops
     end if
   end match
@@ -663,20 +645,20 @@ end macro
 macro ebc.cmp_immediate opcode, width, ops&
   local op1, op2, op1_reg_num, op1_indirect, op1_index
   local op1_imm, op1_nat, op1_cst, op2_width, rel
+  op1_index = 0
   op1_nat = 0
   op1_cst = 0
+  op1_imm = 0
   op2_width = width
 
-  match _op1 (n1 =, c1) =, _op2, ops
-    op1_index = 1
+  match _op1 (val) =, _op2, ops
     define op1 _op1
+    ebc.parse_parenthesis op1_index, op1_nat, op1_cst, op1_imm, val
+    if (op1_index = 3)
+      err 'syntx error'
+    end if
     define op2 _op2
-    op1_nat = n1
-    op1_cst = c1
-  else match _op1 (_imm) =, _op2, ops
-    err 'illegal addressing mode for operand 1'
   else match _op1 =, _op2, ops
-    op1_index = 0
     define op1 _op1
     define op2 _op2
   else
