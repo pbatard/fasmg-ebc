@@ -3,6 +3,7 @@
 ;
 
 include 'ebc.inc'
+include 'efi.inc'
 include 'format.inc'
 
 format peebc efi
@@ -18,7 +19,7 @@ EfiMain:
   DIVU64 R1, R0
   EXTNDB64 R1, @R0
   EXTNDD64 R1, R0(5678)
-  EXTNDW64 @R1, @R0(+12,+24)
+  EXTNDW64 @R1, @R0(SIMPLE_TEXT_INPUT_INTERFACE.Reset)
   MOD R2, R6
   MODU @R2, R3
   MUL R5, @R5
@@ -28,7 +29,7 @@ EfiMain:
   OR64 @R4, R1(-0x8000)
   SHL @R2, R0(-0x12,-0x30)
   SHR32 R1, @R1(0,EfiMain-$)
-  SUB64 @R0, R1(0x1000*0x08)
+  SUB64 @R0, R1(EFI_MAIN_PARAMETERS.SystemTable)
   XOR32 @R1, @R1(-12, EfiMain-Exit)
   ADD R7, R6(+0,+1)
 
@@ -96,6 +97,7 @@ Exit:
   MOVInw R1, (+12,+50)
   MOVInd @R1, (-0x1FFF,-0xFFF)
   MOVIn @R1, (-0x1FFF,-0xFFF)
+  MOVIn R0, (EFI_SYSTEM_TABLE.ConIn)
   MOVInq @R2(+8,+16), (-0x7FFFFFFF,-0x7FFFFFF)
   MOVIn @R2(+8,+16), (-0x7FFFFFFF,-0x7FFFFFF)
 

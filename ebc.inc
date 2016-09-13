@@ -67,6 +67,8 @@ macro is_immediate ret, ops&
     ret = 0
   else match a ( b ), ops
     ret = 0
+  else match a =. b, ops
+    ret = 0
   else match v, ops
     local _v
     _v = +v
@@ -509,13 +511,13 @@ macro ebc.jump_get_offset jmp_size, rel, offset, ops&
     ; indexed => no offset
     jmp_size = -1
   else match reg (imm), ops
-    addr = imm
+    define addr imm
     jmp_size = 0
   else match imm, ops
     local is_imm
     is_immediate is_imm, imm
     if (is_imm)
-      addr = imm
+      define addr imm
       jmp_size = 0
     else
       ; register => no offset

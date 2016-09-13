@@ -27,7 +27,7 @@ EfiMain:
   MOVI   R2, FALSE
   PUSHn  R2
   PUSHn  R1
-  CALLEX @R1(0,0) ; (SIMPLE_TEXT_INPUT_INTERFACE.Reset)
+  CALLEX @R1(SIMPLE_TEXT_INPUT_INTERFACE.Reset)
   POPn   R1
   POPn   R2
 
@@ -39,16 +39,16 @@ WaitForKey:
   CALLEX @R1(SIMPLE_TEXT_INPUT_INTERFACE.ReadKeyStroke)
   POPn   R1
   POPn   R2
-  MOVI   R3, EFI64_NOT_READY
-  CMPeq  R7, R3             ; Must test BOTH the 32 and 64-bit status codes
-  JMPcs  WaitForKey
-  CMPI32deq R7, EFI32_NOT_READY
+  MOVI   R3, EFI_NOT_READY ; Test the 64-bit status code
+  CMPeq  R7, R3
+  JMPcs  WaitForKey        ; Also test the 32-bit status code
+  CMPI32deq R7, EFI_32BIT_ERROR or (EFI_NOT_READY and EFI_32BIT_MASK)
   JMPcs  WaitForKey
 
   MOVn   R6, @R0(EFI_MAIN_PARAMETERS.SystemTable)
   MOVn   R6, @R6(EFI_SYSTEM_TABLE.RuntimeServices)
   MOVI   R1, EfiResetShutdown
-  MOVI   R2, EFI64_SUCCESS
+  MOVI   R2, EFI_SUCCESS
   MOVI   R3, 0
   PUSHn  R3
   PUSHn  R3

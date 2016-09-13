@@ -15,6 +15,7 @@ EfiMain:
   ; And thank you, intel BUGGY EBC Debugger, for making me believe
   ; we had an issue with CALL[EX] computed indexes... >_<
   CALLEX @R1(EFI_SYSTEM_TABLE.ConOut)
+  CALLEX @R1(SIMPLE_TEXT_INPUT_INTERFACE.Reset)
 
 section '.data' data readable writeable
 
