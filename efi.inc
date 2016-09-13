@@ -192,6 +192,54 @@ struct SIMPLE_TEXT_INPUT_INTERFACE
   WaitForKey                   VOID_PTR
 ends
 
+struct EFI_BOOT_SERVICES
+  Hdr                          EFI_TABLE_HEADER
+  RaiseTPL                     VOID_PTR
+  RestoreTPL                   VOID_PTR
+  AllocatePages                VOID_PTR
+  FreePages                    VOID_PTR
+  GetMemoryMap                 VOID_PTR
+  AllocatePool                 VOID_PTR
+  FreePool                     VOID_PTR
+  CreateEvent                  VOID_PTR
+  SetTimer                     VOID_PTR
+  WaitForEvent                 VOID_PTR
+  SignalEvent                  VOID_PTR
+  CloseEvent                   VOID_PTR
+  CheckEvent                   VOID_PTR
+  InstallProtocolInterface     VOID_PTR
+  ReinstallProtocolInterface   VOID_PTR
+  UninstallProtocolInterface   VOID_PTR
+  HandleProtocol               VOID_PTR
+  PCHandleProtocol             VOID_PTR
+  RegisterProtocolNotify       VOID_PTR
+  LocateHandle                 VOID_PTR
+  LocateDevicePath             VOID_PTR
+  InstallConfigurationTable    VOID_PTR
+  LoadImage                    VOID_PTR
+  StartImage                   VOID_PTR
+  Exit                         VOID_PTR
+  UnloadImage                  VOID_PTR
+  ExitBootServices             VOID_PTR
+  GetNextMonotonicCount        VOID_PTR
+  Stall                        VOID_PTR
+  SetWatchdogTimer             VOID_PTR
+  ConnectController            VOID_PTR
+  DisconnectController         VOID_PTR
+  OpenProtocol                 VOID_PTR
+  CloseProtocol                VOID_PTR
+  OpenProtocolInformation      VOID_PTR
+  ProtocolsPerHandle           VOID_PTR
+  LocateHandleBuffer           VOID_PTR
+  LocateProtocol               VOID_PTR
+  InstallMultipleProtocolInterfaces    VOID_PTR
+  UninstallMultipleProtocolInterfaces  VOID_PTR
+  CalculateCrc32               VOID_PTR
+  CopyMem                      VOID_PTR
+  SetMem                       VOID_PTR
+  CreateEventEx                VOID_PTR
+ends
+
 ; Symbols
 
 FALSE                         = 0
