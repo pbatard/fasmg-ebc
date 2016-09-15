@@ -41,9 +41,22 @@ Label:
 Then `JMPcc` will either be converted to `JMP8cc <offset>` or `JMP32cc R0(<offset>)` or `JMP64cc <offset>`
 with `<offset>` being the relative value required for each specific instruction size, to point to `Label`.  
 
-Finally, the assembler can also guess the size of indexes or immediates, if you don't explicitly specify
-one. For instance `MOVIn R1, (+2,+8)` gets assembled as `MOVInw R1, (+2,+8)` whereas `MOVIn R1, (+2,+4096)`
+The assembler can also guess the size of indexes or immediates, if you don't explicitly specify one.
+For instance `MOVIn R1, (+2,+8)` gets assembled as `MOVInw R1, (+2,+8)` whereas `MOVIn R1, (+2,+4096)`
 gets assembled as `MOVInd R1, (+2,+4096)`.
+
+Finally, if you use the `struct` macro to define a set of EFI structures, the assembler will convert member
+references to their equivalent indexes. This means that something like this:
+```
+MOVn R1, @R1(EFI_SYSTEM_TABLE.ConOut)
+```
+gets assembled as:
+```
+MOVn R1, @R1(+5,+24)
+```
+Oh, and this conversion is smart enough to handle alignment computations, such that an `UINT32` (aligned to
+natural size) followed by an `UINT64` does generate `(+1,+0)` for the `UINT64` index and not `(+0,+4)`.  
+For more, see `efi.inc` and `hello.asm`.
 
 ## Assembly and testing (on Windows)
 

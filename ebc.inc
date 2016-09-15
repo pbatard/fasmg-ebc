@@ -67,8 +67,6 @@ macro is_immediate ret, ops&
     ret = 0
   else match a ( b ), ops
     ret = 0
-  else match a =. b, ops
-    ret = 0
   else match v, ops
     local _v
     _v = +v
@@ -165,18 +163,8 @@ macro ebc.parse_parenthesis index, nat, cst, imm, ops&
       nat = 0
       cst = 0
       imm = ops
-    else ; automated index computation
-      index = 1
-      nat = 0
-      cst = ops
-      imm = 0
-      repeat elementsof cst
-        if cst element % eq natural_word
-          nat = cst scale %
-          cst = cst - (nat * natural_word)
-          break
-        end if
-      end repeat 
+    else
+      err 'not an immediate value'
     end if
   end match
 end macro
@@ -511,13 +499,13 @@ macro ebc.jump_get_offset jmp_size, rel, offset, ops&
     ; indexed => no offset
     jmp_size = -1
   else match reg (imm), ops
-    define addr imm
+    addr = imm
     jmp_size = 0
   else match imm, ops
     local is_imm
     is_immediate is_imm, imm
     if (is_imm)
-      define addr imm
+      addr = imm
       jmp_size = 0
     else
       ; register => no offset
@@ -547,20 +535,12 @@ macro ebc.jump_get_offset jmp_size, rel, offset, ops&
         jmp_size = 64
         offset = disp - 10
       end if
-    else ; absolute address or computed index
-      local is_imm
-      is_immediate is_imm, addr
-      if (is_imm) ; absolute address
-        offset = addr
-        if (addr >= -0x80000000) & (addr < 0x80000000)
-          jmp_size = 32
-        else
-          jmp_size = 64
-        end if
-      else ; computed index
+    else ; absolute address
+      offset = addr
+      if (addr >= -0x80000000) & (addr < 0x80000000)
         jmp_size = 32
-        ; we return an offset > 32 bit to signal that this is a computed index
-        offset = 0x800000000
+      else
+        jmp_size = 64
       end if
     end if
   end if
@@ -659,11 +639,7 @@ macro ebc.jump_call_auto opcode, flags, ops&
       end if
       ebc.jump_short (flags shr 2), ops
     else if (jmp_size = 32)
-      if (offset >= 0x100000000) ; computed index
-        ebc.jump_call opcode, flags, ops
-      else
-        ebc.jump_call opcode, flags, R0(ops)
-      end if
+      ebc.jump_call opcode, flags, R0(ops)
     else
       ebc.jump_call (0x40 or opcode), flags, ops
     end if

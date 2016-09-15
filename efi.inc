@@ -3,111 +3,96 @@
 ; Copyright © 2016 Tomasz Grysztar <tgrysztar@niewidoczna.pl>
 ;
 
-; Helper macros for automated index computation
+element S
 
-macro virtual? setup
-  macro org? address
-    local a
-    a = address
-    end virtual
-    virtual at a
-  end macro
-  virtual setup
-end macro
+element BOOLEAN?    : S + 1
+element INT8?       : S + 1
+element UINT8?      : S + 1
+element INT16?      : S + 2
+element UINT16?     : S + 2
+element INT32?      : S + 4
+element UINT32?     : S + 4
+element INT64?      : S + 8
+element UINT64?     : S + 8
+element INTN?       : S - 8 ; negative => natural value
+element UINTN?      : S - 8
+element VOID_PTR?   : S - 8
+element EFI_STATUS? : S - 8
+element EFI_HANDLE? : S - 8
 
-macro end?.virtual?
+; Helper macros for automated index and alignment computation
+; (e.g. UINT32 followed by UINT64 results in (+1,+0) rather than (+0,+4)).
+
+; Returns the base element size for constructs like 'rq 4' or 'dw ?'
+macro get_element_size size, def&
+  local n
+  match element =?, def
+    n = 1
+  else match element repeat, def
+    n = repeat
+  else
+    err 'unsupported declaration'
+  end match
+  virtual at 0
+    def
+    size = $ / n
   end virtual
-  purge org?
 end macro
 
 macro struct? name
-  macro ends?!
-      end namespace
-    end struc
-    virtual at 0
-      name name
-      sizeof.name = $
-    end virtual
-    purge ends?
-  end macro
-  struc name
-    label .
-    namespace .
+  define name 0
+  namespace name
+  virtual at 0
+  name.n = 0 ; current number of natural elements
+  name.c = 0 ; current number of constant elements
+  name.l = 0 ; previous element local start address
+  name.s = 0 ; previous element size
+
+  struc ? def&
+    local n, c, s, i, as_is
+    as_is = 0
+    i = 0
+    match a b, def
+      as_is = 1
+      get_element_size s, def
+    else
+      if def metadata 1 relativeto S
+        s = def metadata 1 - S
+      else
+        s = def.c
+      end if
+      if (s < 0)
+        i = 1
+        s = -s
+      end if
+    end match
+    align s
+    c = $ - (8 * name.n)
+    if (name.l + name.s <> $) ; alignment correction
+      name.n = name.n + 1
+      c = c - 8
+    end if
+    n = name.n
+    . equ +n,+c
+    name.l = $
+    if (as_is)
+      def
+    else
+      rb s
+    end if
+    name.n = name.n + i
+    name.s = $ - name.l ; size of current element
+    name.c = name.c + name.s
+  end struc
 end macro
 
-element natural_word?
-
-macro dn? value
-  match ?, value
-    org $ + natural_word
-  else
-    err 'invalid value'
-  end match
+macro ends?
+  restruc ?
+  end virtual
+  end namespace
 end macro
-
-macro rn? count
-  org $ + natural_word * count
-end macro
-
-struc dn? value
-  .: dn value
-end struc
-
-struc rn? count
-  .: rn count
-end struc
 
 ; Data definitions, from UEFI specs
-
-struct BOOLEAN
-  db ?
-ends
-struct INT8
-  db ?
-ends
-struct UINT8
-  db ?
-ends
-struct INT16
-  dw ?
-ends
-struct UINT16
-  dw ?
-ends
-struct INT32
-  dd ?
-ends
-struct UINT32
-  dd ?
-ends
-struct INT64
-  dq ?
-ends
-struct UINT64
-  dq ?
-ends
-struct INTN
-  dn ?
-ends
-struct UINTN
-  dn ?
-ends
-struct CHAR8
-  db ?
-ends
-struct CHAR16
-  dw ?
-ends
-struct VOID_PTR
-  dn ?
-ends
-struct EFI_STATUS
-  dn ?
-ends
-struct EFI_HANDLE
-  dn ?
-ends
-
 
 ; EfiMain() is handled like any other EBC CALL routine, therefore
 ; we need to skip c=+16 bytes to access our parameters, due to the
@@ -117,7 +102,7 @@ ends
 ; Knowing this, the setup for the two EfiMain() parameters are
 ; 'ImageHandle' at (+0,+16) and 'SystemTable' at (+1,+16).
 struct EFI_MAIN_PARAMETERS
-  Reserved                     rb 16
+  Reserved                     rq 2
   ImageHandle                  VOID_PTR
   SystemTable                  VOID_PTR
 ends
@@ -133,16 +118,7 @@ ends
 struct EFI_SYSTEM_TABLE
   Hdr                          EFI_TABLE_HEADER
   FirmwareVendor               VOID_PTR
-  ; "Fun" rule of EBC structure index computations (as per UEFI Specs 2.6
-  ; Chapter 2.3.1)  "Internal (structure) data are implicitly padded to
-  ; achieve natural alignment."
-  ; This means that, 'FirmwareRevision' below, which is really an UINT32,
-  ; must be handled as a natural member when computed as an index value,
-  ; since we may have UINT32 + 4 bytes padding (= 64 bits) on x64, or
-  ; UINT32 + no padding (= 32 bits) on IA32 or ARM. 
-  ; Since our index computations are not that smart, we cheat by inserting
-  ; it as a straight UINTN...
-  FirmwareRevision             UINTN
+  FirmwareRevision             UINT32
   ConsoleInHandle              EFI_HANDLE
   ConIn                        VOID_PTR
   ConsoleOutHandle             EFI_HANDLE
