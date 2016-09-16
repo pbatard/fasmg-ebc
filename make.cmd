@@ -24,6 +24,8 @@ if [%1]==[debug] (
     goto end
   )
   set RUN_QEMU=1
+) else if [%1]==[x64] (
+  rem nothing to do
 ) else if [%1]==[ia32] (
   set UEFI_EXT=ia32
   set QEMU_ARCH=i386
@@ -31,6 +33,10 @@ if [%1]==[debug] (
   set UEFI_EXT=arm
   set QEMU_ARCH=arm
   set QEMU_OPTS=-M virt -cpu cortex-a15 %QEMU_OPTS%
+) else if [%1]==[aa64] (
+  set UEFI_EXT=aa64
+  set QEMU_ARCH=aarch64
+  set QEMU_OPTS=-M virt -cpu cortex-a57 %QEMU_OPTS%
 ) else (
   set FILE=%1
   if not exist "%1.asm" (
@@ -48,7 +54,8 @@ if not %errorlevel%==0 goto end
 
 set OVMF_BIOS=OVMF_%UEFI_EXT%.fd
 if not exist %OVMF_BIOS% (
-  set OVMF_BIOS=OVMF.fd
+  call cscript /nologo "%~dp0download.vbs" %UEFI_EXT%
+  if errorlevel 1 goto end
 )
 set QEMU_EXE=qemu-system-%QEMU_ARCH%w.exe
 
@@ -59,6 +66,14 @@ if not exist %OVMF_BIOS% (
   goto end
 )
 
+if [%UEFI_EXT%]==[arm] (
+  echo.
+  echo IMPORTANT: As of 2016.09.16, EBC support for ARM is not integrated into EDK2
+  echo This means that trying to run an EBC application will probably not work...
+  echo.
+  pause
+)
+
 if not exist image\efi\boot mkdir image\efi\boot
 del image\efi\boot\boot*.efi > NUL 2>&1
 del image\efi\boot\startup.nsh > NUL 2>&1
@@ -66,6 +81,10 @@ if not [%RUN_DEBUGGER%]==[] (
   echo fs0: > image\efi\boot\startup.nsh
   echo cd efi\boot\ >> image\efi\boot\startup.nsh
   copy %FILE%.efi image\efi\boot >NUL
+  if not exist "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" (
+    echo EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi was not found
+    goto end
+  )
   copy "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" image\efi\boot\EbcDebugger_%UEFI_EXT%.efi >NUL
   echo EbcDebugger_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
   echo %FILE%.efi >> image\efi\boot\startup.nsh

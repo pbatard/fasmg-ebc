@@ -9,8 +9,9 @@ to produce EBC executables..._
 
 * [flat assembler g (fasmg)](http://flatassembler.net/download.php).  
   Please make sure to download the 'g' version of fasm.
-* [QEMU](http://www.qemu.org) __v2.5 or later__ and [OVMF](http://www.tianocore.org/ovmf/) for testing.  
-  NB: You can find QEMU Windows binaries [here](https://qemu.weilnetz.de/w64/).
+* [QEMU](http://www.qemu.org) __v2.7 or later__
+  NB: You can find QEMU Windows binaries [here](https://qemu.weilnetz.de/w64/).  
+  Make sure you use QEMU 2.7 or later, as earlier versions may produce a `Synchronous Exception` on AARCH64.
 * UEFI.org's [EBC Debugger](http://www.uefi.org/node/550) for syntax debugging and validation.  
   Note however that __the EBC Debugger [IS](https://github.com/tianocore/edk/blob/master/Sample/Universal/Ebc/Dxe/EbcDebugger/EdbDisasmSupport.c#L191)
   [buggy](https://github.com/tianocore/edk/blob/master/Sample/Universal/Ebc/Dxe/EbcDebugger/EdbDisasmSupport.c#L228)
@@ -58,12 +59,13 @@ Oh, and this conversion is smart enough to handle alignment computations, such t
 natural size) followed by an `UINT64` does generate `(+1,+0)` for the `UINT64` index and not `(+0,+4)`.  
 For more, see `efi.inc` and `hello.asm`.
 
-## Assembly and testing (on Windows)
+## Assembly and testing (Windows)
 
 * Make sure fasmg is in your path, or copy `fasmg.exe` to the current directory
 * Run `make` to compile the `hello.asm` sample
 * Additionally, you can compile one of the other samples by providing its short name (e.g. `make ebctest`)
-* If you have QEMU installed, you can extract the [latest x64 OVMF](http://www.tianocore.org/ovmf/)
-  into the root directory, and add the `qemu` parameter to run the application (e.g. `make hello qemu`)
+* If you have QEMU installed, you can add a `qemu` parameter to run the application (e.g. `make hello qemu`)  
+  You can also add one of `x64`, `ia32`, `arm` and `aa64` to run the application against a specific UEFI
+  architecture (e.g. `make hello qemu aa64`)
 * Also, if you have extracted the EBC Debugger into the root directory, you can add the `debug` parameter
   to run the assembled executable through the debugger (e.g. `make ebctest debug`)
