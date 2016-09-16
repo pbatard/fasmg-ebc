@@ -57,8 +57,13 @@ macro struct? name
       if def metadata 1 relativeto S
         s = def metadata 1 - S
       else
+        ; we assert that any reference to a substructure is aligned to natural word
+        ; so that we can just add its existing n and c to our computed values
+        if ($ mod 8 <> 0)
+          err 'substructure must be aligned to natural word'
+        end if
         s = def.s
-        name.n = name.n + def.n
+        i = i + def.n
       end if
       if (s < 0)
         i = 1
@@ -71,6 +76,8 @@ macro struct? name
     align s
     c = $ - (8 * name.n)
     n = name.n
+    assert (n >= 0)
+    assert (c >= 0)
     . equ +n,+c
     if (as_is)
       def
