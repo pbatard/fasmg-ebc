@@ -28,8 +28,8 @@ macro get_element_size size, def&
   local n
   match element =?, def
     n = 1
-  else match element repeat, def
-    n = repeat
+  else match rt val, def
+    n = val
   else
     err 'unsupported declaration'
   end match
@@ -44,9 +44,7 @@ macro struct? name
   namespace name
   virtual at 0
   name.n = 0 ; current number of natural elements
-  name.c = 0 ; current number of constant elements
-  name.l = 0 ; previous element local start address
-  name.s = 0 ; previous element size
+  name.s = 0 ; current struct size
 
   struc ? def&
     local n, c, s, i, as_is
@@ -59,30 +57,28 @@ macro struct? name
       if def metadata 1 relativeto S
         s = def metadata 1 - S
       else
-        s = def.c
+        s = def.s
+        name.n = name.n + def.n
       end if
       if (s < 0)
         i = 1
         s = -s
       end if
     end match
+    if (s = 8) & ((($+3) and (not 3)) <> (($+7) and (not 7)))
+      name.n = name.n + 1 ; alignment correction required
+    end if
     align s
     c = $ - (8 * name.n)
-    if (name.l + name.s <> $) ; alignment correction
-      name.n = name.n + 1
-      c = c - 8
-    end if
     n = name.n
     . equ +n,+c
-    name.l = $
     if (as_is)
       def
     else
       rb s
     end if
     name.n = name.n + i
-    name.s = $ - name.l ; size of current element
-    name.c = name.c + name.s
+    name.s = $
   end struc
 end macro
 

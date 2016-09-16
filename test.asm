@@ -14,7 +14,7 @@ EfiMain:
   MOV R1, @R1(EFI_SYSTEM_TABLE.Hdr)
   MOV R1, @R1(EFI_TABLE_HEADER.HeaderSize)
   MOV R1, @R1(EFI_TABLE_HEADER.Reserved)
-  MOV R1, @R1(EFI_SYSTEM_TABLE.FirmwareVendor)
+  MOV R1, @R1(EFI_SYSTEM_TABLE.ConsoleInHandle)
   MOV R1, @R1(EFI_SYSTEM_TABLE.ConOut)
   BREAK 3
   ; And thank you, intel BUGGY EBC Debugger, for making me believe
