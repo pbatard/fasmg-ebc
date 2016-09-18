@@ -68,10 +68,9 @@ if not exist %OVMF_BIOS% (
 
 if [%UEFI_EXT%]==[arm] (
   echo.
-  echo IMPORTANT: As of 2016.09.16, EBC support for ARM is not integrated into EDK2
-  echo This means that trying to run an EBC application will probably not work...
+  echo Notice: As of 2016.09.18, EBC support for ARM is not integrated into EDK2
+  echo which means a specially patched UEFI firmware is required for EBC to work...
   echo.
-  pause
 )
 
 if not exist image\efi\boot mkdir image\efi\boot
