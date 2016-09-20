@@ -88,7 +88,15 @@ if not [%RUN_DEBUGGER%]==[] (
   echo EbcDebugger_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
   echo %FILE%.efi >> image\efi\boot\startup.nsh
 ) else (
-  copy %FILE%.efi image\efi\boot\boot%UEFI_EXT%.efi >NUL
+  if [%FILE%]==[protocol] (
+    copy %FILE%.efi image\%FILE%.efi >NUL
+    copy Protocol\driver_%UEFI_EXT%.efi image > NUL
+    echo fs0: > image\efi\boot\startup.nsh
+    echo load driver_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
+    echo %FILE%.efi >> image\efi\boot\startup.nsh
+  ) else (
+    copy %FILE%.efi image\efi\boot\boot%UEFI_EXT%.efi >NUL
+  )
 )
 
 "%QEMU_PATH%%QEMU_EXE%" %QEMU_OPTS% -L . -bios %OVMF_BIOS% -hda fat:image

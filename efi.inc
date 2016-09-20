@@ -95,6 +95,25 @@ macro ends?
   end namespace
 end macro
 
+; Enables copy/pasting GUIDs from C code
+macro EFI_GUID? data&
+  match { d1 =, d2 =, d3 =, { d4_1 =, d4_2 =, d4_3 =, d4_4 =, d4_5 =, d4_6 =, d4_7 =, d4_8 } }, data
+    dd d1
+    dw d2
+    dw d3
+    db d4_1
+    db d4_2
+    db d4_3
+    db d4_4
+    db d4_5
+    db d4_6
+    db d4_7
+    db d4_8
+  else
+    err 'invalid GUID syntax'
+  end match 
+end macro
+
 ; Data definitions, from UEFI specs
 
 ; EfiMain() is handled like any other EBC CALL routine, therefore
@@ -228,30 +247,30 @@ EFI_SUCCESS                   = 0x0000000000000000
 EFI_ERROR                     = 0x8000000000000000
 EFI_32BIT_ERROR               = 0x80000000
 EFI_32BIT_MASK                = 0xFFFFFFFF
-EFI_LOAD_ERROR                = EFI_ERROR or 1
-EFI_INVALID_PARAMETER         = EFI_ERROR or 2
-EFI_UNSUPPORTED               = EFI_ERROR or 3
-EFI_BAD_BUFFER_SIZE           = EFI_ERROR or 4
-EFI_BUFFER_TOO_SMALL          = EFI_ERROR or 5
-EFI_NOT_READY                 = EFI_ERROR or 6
-EFI_DEVICE_ERROR              = EFI_ERROR or 7
-EFI_WRITE_PROTECTED           = EFI_ERROR or 8
-EFI_OUT_OF_RESOURCES          = EFI_ERROR or 9
-EFI_VOLUME_CORRUPTED          = EFI_ERROR or 10
-EFI_VOLUME_FULL               = EFI_ERROR or 11
-EFI_NO_MEDIA                  = EFI_ERROR or 12
-EFI_MEDIA_CHANGED             = EFI_ERROR or 13
-EFI_NOT_FOUND                 = EFI_ERROR or 14
-EFI_ACCESS_DENIED             = EFI_ERROR or 15
-EFI_NO_RESPONSE               = EFI_ERROR or 16
-EFI_NO_MAPPING                = EFI_ERROR or 17
-EFI_TIMEOUT                   = EFI_ERROR or 18
-EFI_NOT_STARTED               = EFI_ERROR or 19
-EFI_ALREADY_STARTED           = EFI_ERROR or 20
-EFI_ABORTED                   = EFI_ERROR or 21
-EFI_ICMP_ERROR                = EFI_ERROR or 22
-EFI_TFTP_ERROR                = EFI_ERROR or 23
-EFI_PROTOCOL_ERROR            = EFI_ERROR or 24
+EFI_LOAD_ERROR                = EFI_ERROR or 0x01
+EFI_INVALID_PARAMETER         = EFI_ERROR or 0x02
+EFI_UNSUPPORTED               = EFI_ERROR or 0x03
+EFI_BAD_BUFFER_SIZE           = EFI_ERROR or 0x04
+EFI_BUFFER_TOO_SMALL          = EFI_ERROR or 0x05
+EFI_NOT_READY                 = EFI_ERROR or 0x06
+EFI_DEVICE_ERROR              = EFI_ERROR or 0x07
+EFI_WRITE_PROTECTED           = EFI_ERROR or 0x08
+EFI_OUT_OF_RESOURCES          = EFI_ERROR or 0x09
+EFI_VOLUME_CORRUPTED          = EFI_ERROR or 0x0A
+EFI_VOLUME_FULL               = EFI_ERROR or 0x0B
+EFI_NO_MEDIA                  = EFI_ERROR or 0x0C
+EFI_MEDIA_CHANGED             = EFI_ERROR or 0x0D
+EFI_NOT_FOUND                 = EFI_ERROR or 0x0E
+EFI_ACCESS_DENIED             = EFI_ERROR or 0x0F
+EFI_NO_RESPONSE               = EFI_ERROR or 0x10
+EFI_NO_MAPPING                = EFI_ERROR or 0x11
+EFI_TIMEOUT                   = EFI_ERROR or 0x12
+EFI_NOT_STARTED               = EFI_ERROR or 0x13
+EFI_ALREADY_STARTED           = EFI_ERROR or 0x14
+EFI_ABORTED                   = EFI_ERROR or 0x15
+EFI_ICMP_ERROR                = EFI_ERROR or 0x16
+EFI_TFTP_ERROR                = EFI_ERROR or 0x17
+EFI_PROTOCOL_ERROR            = EFI_ERROR or 0x18
 
 EfiResetCold                  = 0
 EfiResetWarm                  = 1
