@@ -39,12 +39,12 @@ PrintHex:
   NOT       R4, R6
   MOVREL    R5, Digits
   MOVREL    R7, Value
-  ADD       R7, R6(4)
+  ADD       R7, R6(8)
   PUSH      @R0(0,+16)
 Loop:
   MOV       R1, @R0
   EXTNDD    R2, R6(4)
-  MUL       R2, R3(-15)
+  MUL       R2, R3(-7)
   NEG       R2, R2
   SHR       R1, R2
   ADD       R1, R1
@@ -53,10 +53,10 @@ Loop:
   MOVw      @R7, @R5
   ADD       R7, R6(2)
   POP       R5
-  SHR       R4, R6(4)
+  SHR32     R4, R6(4)
   AND       @R0, R4
   ADD       R3, R6(1)
-  CMPIgte   R3, 16
+  CMPIgte   R3, 8
   JMPcc     Loop
   POP       R1
   MOVREL    R1, Value
@@ -94,14 +94,14 @@ EfiMain:
 LocateProtocolOK:
   MOVREL    R1, Interface
   MOVn      R1, @R1
+  CALLEX    @R1(EFI_DRIVER_PROTOCOL.Hello)
+
+  MOVREL    R1, Interface
+  MOVn      R1, @R1
   MOVn      R1, @R1(EFI_DRIVER_PROTOCOL.DataNative)
   PUSH      R1
   CALL      PrintHex
   POP       R1
-  
-  MOVREL    R1, Interface
-  MOVn      R1, @R1
-  CALLEX    @R1(EFI_DRIVER_PROTOCOL.Hello)
 
   MOVIq     R1, 0x7777777777777777
   PUSH64    R1
@@ -117,11 +117,11 @@ LocateProtocolOK:
   PUSH64    R1
   MOVId     R1, 0x11111111
   PUSH32    R1
-  
+
   MOVREL    R1, Interface
   MOVn      R1, @R1
   CALLEX    @R1(EFI_DRIVER_PROTOCOL.MultiParamFixed)
-  MOV       R0, R0(+0,+44)  
+  MOV       R0, R0(+0,+44)
 
   MOVI      R1, 0xCCCCCCCCCCCCCCCC
   PUSHn     R1
@@ -147,11 +147,11 @@ LocateProtocolOK:
   PUSHn     R1
   MOVI      R1, 0x1111111111111111
   PUSHn     R1
-  
+
   MOVREL    R1, Interface
   MOVn      R1, @R1
   CALLEX    @R1(EFI_DRIVER_PROTOCOL.MultiParamNative)
-  MOV       R0, R0(+12,+0)  
+  MOV       R0, R0(+12,+0)
 
   RET
 
@@ -160,7 +160,7 @@ section '.data' data readable writeable
   gST:      dq ?
   Event:    dq ?
   Digits:   du "0123456789ABCDEF"
-  Value:    du "0x1234567812345678", 0x0D, 0x0A
+  Value:    du "  0x12345678", 0x0D, 0x0A
             du 0x00
   LPMsg:    du "LocateProtocol: "
             du 0x00
