@@ -5,9 +5,11 @@ set UEFI_EXT=x64
 set QEMU_ARCH=x86_64
 set QEMU_PATH=C:\Program Files\qemu\
 set QEMU_OPTS=-net none -monitor none -parallel none
+set FIRMWARE_BASENAME=OVMF
 set FILE=hello
 set RUN_QEMU=
 set RUN_DEBUGGER=
+set SERIAL_LOG=
 
 :loop
 if [%1]==[] goto next
@@ -33,10 +35,14 @@ if [%1]==[debug] (
   set UEFI_EXT=arm
   set QEMU_ARCH=arm
   set QEMU_OPTS=-M virt -cpu cortex-a15 %QEMU_OPTS%
+  set FIRMWARE_BASENAME=QEMU_EFI
 ) else if [%1]==[aa64] (
   set UEFI_EXT=aa64
   set QEMU_ARCH=aarch64
   set QEMU_OPTS=-M virt -cpu cortex-a57 %QEMU_OPTS%
+  set FIRMWARE_BASENAME=QEMU_EFI
+) else if [%1]==[serial] (
+  set QEMU_OPTS=%QEMU_OPTS% -serial file:serial_%UEFI_EXT%.log
 ) else (
   set FILE=%1
   if not exist "%1.asm" (
@@ -52,23 +58,18 @@ echo fasmg %FILE%.asm %FILE%.efi
 fasmg %FILE%.asm %FILE%.efi
 if not %errorlevel%==0 goto end
 
-set OVMF_BIOS=OVMF_%UEFI_EXT%.fd
-if not exist %OVMF_BIOS% (
-  call cscript /nologo "%~dp0download.vbs" %UEFI_EXT%
-  if errorlevel 1 goto end
-)
-set QEMU_EXE=qemu-system-%QEMU_ARCH%w.exe
-
 if [%RUN_QEMU%]==[] goto end
 
-if not exist %OVMF_BIOS% (
-  echo %OVMF_BIOS% is missing!
-  goto end
+set QEMU_FIRMWARE=%FIRMWARE_BASENAME%_%UEFI_EXT%.fd
+set QEMU_EXE=qemu-system-%QEMU_ARCH%w.exe
+if not exist %QEMU_FIRMWARE% (
+  call cscript /nologo "%~dp0download.vbs" %FIRMWARE_BASENAME% %UEFI_EXT%
+  if errorlevel 1 goto end
 )
 
 if [%UEFI_EXT%]==[arm] (
   echo.
-  echo Notice: As of 2016.09.18, EBC support for ARM is not integrated into EDK2
+  echo Notice: As of 2016.09.20, EBC support for ARM is not integrated into EDK2
   echo which means a specially patched UEFI firmware is required for EBC to work...
   echo.
 )
@@ -99,7 +100,7 @@ if not [%RUN_DEBUGGER%]==[] (
   )
 )
 
-"%QEMU_PATH%%QEMU_EXE%" %QEMU_OPTS% -L . -bios %OVMF_BIOS% -hda fat:image
+"%QEMU_PATH%%QEMU_EXE%" %QEMU_OPTS% -L . -bios %QEMU_FIRMWARE% -hda fat:image
 del /q trace-* >NUL 2>&1
 
 :end

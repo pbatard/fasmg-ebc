@@ -2,11 +2,12 @@
 ' QEMU firmware download script.
 '
 
-OVMF_ARCH = UCase(WScript.Arguments(0))
-OVMF_DIR  = "http://efi.akeo.ie/OVMF/"
-OVMF_ZIP  = "OVMF-" & OVMF_ARCH & ".zip"
-OVMF_BIOS = "OVMF_" & OVMF_ARCH & ".fd"
-OVMF_URL  = OVMF_DIR & OVMF_ZIP
+FW_NAME = UCase(WScript.Arguments(0))
+FW_ARCH = UCase(WScript.Arguments(1))
+FW_DIR  = "http://efi.akeo.ie/" & FW_NAME & "/"
+FW_ZIP  = FW_NAME & "-" & FW_ARCH & ".zip"
+FW_FILE = FW_NAME & "_" & FW_ARCH & ".fd"
+FW_URL  = FW_DIR & FW_ZIP
 
 ' Globals
 Set fso = CreateObject("Scripting.FileSystemObject")
@@ -55,22 +56,22 @@ Sub Unzip(Archive, File)
 End Sub
 
 ' Fetch the UEFI firmware and unzip it
-If Not fso.FileExists(OVMF_BIOS) Then
+If Not fso.FileExists(FW_FILE) Then
   Call WScript.Echo("The UEFI firmware file, needed for QEMU, " &_
-    "is being downloaded from: " & vbCrLf & OVMF_URL & vbCrLf &_
+    "is being downloaded from: " & vbCrLf & FW_URL & vbCrLf &_
     "Note: Unless you delete the file, this should only happen once.")
-  Call DownloadHttp(OVMF_URL, OVMF_ZIP)
+  Call DownloadHttp(FW_URL, FW_ZIP)
 End If
-If Not fso.FileExists(OVMF_ZIP) And Not fso.FileExists(OVMF_BIOS) Then
+If Not fso.FileExists(FW_ZIP) And Not fso.FileExists(FW_FILE) Then
   Call WScript.Echo("There was a problem downloading the QEMU UEFI firmware.")
   Call WScript.Quit(1)
 End If
-If fso.FileExists(OVMF_ZIP) Then
-  Call Unzip(OVMF_ZIP, "OVMF.fd")
-  Call fso.MoveFile("OVMF.fd", OVMF_BIOS)
-  Call fso.DeleteFile(OVMF_ZIP)
+If fso.FileExists(FW_ZIP) Then
+  Call Unzip(FW_ZIP, FW_NAME & ".fd")
+  Call fso.MoveFile(FW_NAME & ".fd", FW_FILE)
+  Call fso.DeleteFile(FW_ZIP)
 End If
-If Not fso.FileExists(OVMF_BIOS) Then
+If Not fso.FileExists(FW_FILE) Then
   Call WScript.Echo("There was a problem unzipping the QEMU UEFI firmware.")
   Call WScript.Quit(1)
 End If
