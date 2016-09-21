@@ -6,6 +6,18 @@
 #include <efi.h>
 #include <efilib.h>
 
+#if defined(_M_X64) || defined(__x86_64__)
+  #define ISA EFI_IMAGE_MACHINE_X64
+#elif defined(_M_IX86) || defined(__i386__)
+  #define ISA EFI_IMAGE_MACHINE_IA32
+#elif defined (_M_ARM64) || defined(__aarch64__)
+  #define ISA EFI_IMAGE_MACHINE_AARCH64
+#elif defined (_M_ARM) || defined(__arm__)
+  #define ISA EFI_IMAGE_MACHINE_ARMTHUMB_MIXED
+#else
+  #error 'Unsupported architecture'
+#endif
+
 #if defined(_M_IX86) || defined(__i386__) || defined (_M_ARM) || defined(__arm__)
   #define NATIVE_FORMAT L"0x%08X"
 #else
@@ -59,7 +71,7 @@ typedef EFI_STATUS(EFIAPI *EFI_MULTIPARAM_NATIVE) (
 	);
 
 typedef struct {
-	INTN                    DataNative;
+	INTN                    Isa;
 	EFI_HELLO               Hello;
 	EFI_SINGLEPARAM_32      SingleParam32;
 	EFI_SINGLEPARAM_64      SingleParam64;
@@ -121,7 +133,7 @@ EFI_STATUS MultiParamNative(UINTN p1, UINTN p2, UINTN p3, UINTN p4, UINTN p5,
 	return EFI_SUCCESS;
 }
 
-static EFI_CUSTOM_PROTOCOL CustomProtocol = { 0xACCE55ED, Hello, SingleParam32, SingleParam64,
+static EFI_CUSTOM_PROTOCOL CustomProtocol = { ISA, Hello, SingleParam32, SingleParam64,
 	SingleParamNative, MultiParamFixed, MultiParamNative };
 
 /* Handle for our custom protocol */
