@@ -110,13 +110,19 @@ EfiMain:
   CALL      PrintHex
   POP       R6
 
-  ; Because of the nature of EBC, if you are calling into a native function
-  ; that uses a mix of 64 and non 64-bit parameters then there's no escaping
-  ; understanding how parameters are being passed for each specific
-  ; architecture, and compensating for it as required, as the EBC VM can't.
+  ; From UEFI 2.6, 21.9.3:
+  ;
+  ; All parameters are stored or accessed as natural size (using naturally
+  ; sized instruction) except 64-bit integers, which are pushed as 64-bit
+  ; values. 32-bit integers are pushed as natural size (since they should be
+  ; passed as 64-bit parameter values on 64-bit machines).
+  ;
+  ; Note however that we still have an issue with this on Arm
+  
   ; The problem is as follows: Say you have MyCall(UINT32, UINT64, UINT64) to
   ; which you are passing (0x1C1C1C1C, 0x2B2B2B2B2A2A2A2A, 0x3B3B3B3B3A3A3A3A)
-  ; In the EBC VM, the paramaters get stacked as (little endian, CDECL):
+  ; In the EBC VM running on 32-bit, the parameters will get stacked as
+  ; (little endian, CDECL):
   ;
   ;   +--------+
   ;   |1C1C1C1C|
@@ -135,15 +141,14 @@ EfiMain:
   ; Now, if you are calling into an x86_32 arch, this is no issue, as the
   ; native call reads the parameters off the stack, and finds each one it its
   ; expected location.
-  ; But let's say you are calling into an Arm (32 bit) arch. In that case, the
-  ; calling convention dictates that the first four 32 bits parameters must be
-  ; placed into Arm registers r0-r3, rather than on the stack, and what's more,
-  ; that if there exist 64 bit parameters among the register ones, they must
-  ; start with an even register (r0 or r2).
+  ; But if you are calling into Arm_32 the calling convention dictates that the
+  ; first four 32 bits parameters must be placed into registers r0-r3, rather
+  ; than on the stack, and what's more, that if there exist 64 bit parameters
+  ; among the register ones, they must start with an even register (r0 or r2).
   ; What this means is that, with the current EBC handling, which simply maps
   ; the top of the stack onto registers for native CALLEX (as the VM doesn't
   ; know the parameter signature of the function it is calling into) the native
-  ; function would get called with the following parameter mapping:
+  ; function ends up being called with the following parameter mapping:
   ;
   ;   +--------+
   ;   |1C1C1C1C|  -> r0 (32-bit first parameter)
@@ -159,49 +164,33 @@ EfiMain:
   ;   +????????+  -> upper half of 64-bit third parameter (stack)
   ;   +--------+
   ;
-  ; The end result is that, as far as the native Arm call is concerned, 
-  ; it retrieves the parameters:
+  ; The result is that, as far as the native Arm call is concerned, and unless
+  ; you compensate for it, it will see the values:
+  ;
   ; (0x1C1C1C1C, 0x3A3A3A3A2B2B2B2B, 0x????????3B3B3B3B)
   ;
-  ; The same kind of issue also applies to x86_64 and Arm64, as any of the
-  ; first eight parameters to native calls, that are smaller than 64-bit,
-  ; also gets extended to 64 bit, when being passed as register.
+  ; Note that this doesn't apply to EBC VMs running on 64 bit archs, as any
+  ; 32-bit parameter gets padded to 64-bit (as per the specs requirements
+  ; mentioned above).
   ;
-  ; Being aware of this, you may have to take arch specific measures, such as
-  ; expanding possible register parameters onto the stack, before calling a
-  ; native function call.
+  ; Being aware of this, you may have to take arch specific measures for Arm,
+  ; such as expanding possible register parameters onto the stack, before
+  ; calling a native function call. You should also be mindful that a
+  ; similar issue may apply if the return value from your native call is 64-bit.
   ;
-  ; in the following section, we provide an example of how this could be
-  ; accomplished.
-  ; You may also test what happens when not compensating for the above, by
-  ; setting NoArchCompensation to 1 in the data section.
-
-  MOVREL    R2, NoArchCompensation
+  ; For more on this, please see the following:
+  ; https://lists.01.org/pipermail/edk2-devel/2016-September/001950.html
+  ;
+  ; In the section below, we illustrate how one can work around calling into a
+  ; native Arm protocol, that presents the issue described above.
+  ;
   MOV       R2, @R2
   MOVIq     R1, 0x7B7B7B7B7A7A7A7A
   PUSH64    R1
   MOVId     R1, 0x6C6C6C6C
-  PUSH32    R1
-  ; Expand to 64 bit for AARCH64 and X64
-  CMPIeq    R2, 1 ; NoArchCompensation Override
-  JMPcs     NoExtraPushP6
-  CMPI32eq  R6, EFI_IMAGE_MACHINE_IA32
-  JMPcs     NoExtraPushP6
-  CMPI32eq  R6, EFI_IMAGE_MACHINE_ARM
-  JMPcs     NoExtraPushP6
-  PUSH32    R1
-NoExtraPushP6:
+  PUSHn     R1
   MOVId     R1, 0x5C5C5C5C
-  PUSH32    R1
-  ; Expand to 64 bit for AARCH64 and X64
-  CMPIeq    R2, 1 ; NoArchCompensation Override
-  JMPcs     NoExtraPushP5
-  CMPI32eq  R6, EFI_IMAGE_MACHINE_IA32
-  JMPcs     NoExtraPushP5
-  CMPI32eq  R6, EFI_IMAGE_MACHINE_ARM
-  JMPcs     NoExtraPushP5
-  PUSH32    R1
-NoExtraPushP5:
+  PUSHn     R1
   MOVIq     R1, 0x4B4B4B4B4A4A4A4A
   PUSH64    R1
   MOVIq     R1, 0x3B3B3B3B3A3A3A3A
@@ -209,28 +198,22 @@ NoExtraPushP5:
   MOVIq     R1, 0x2B2B2B2B2A2A2A2A
   PUSH64    R1
   MOVId     R1, 0x1C1C1C1C
-  ; Expand to 64 bit for ARM, AARCH64 and X64
-  CMPIeq    R2, 1 ; NoArchCompensation Override
-  JMPcs     NoExtraPushP1
-  CMPI32eq  R6, EFI_IMAGE_MACHINE_IA32
-  JMPcs     NoExtraPushP1
+  PUSHn     R1
+  ; Pad to 64 bit for ARM, since this parameter ends up as a register argument
+  CMPI32eq  R6, EFI_IMAGE_MACHINE_ARM
+  JMPcc     @f
   PUSH32    R1
-NoExtraPushP1:  
-  PUSH32    R1
+@@:
 
   MOVREL    R1, CustomProtocolInterface
   MOVn      R1, @R1
   CALLEX    @R1(EFI_CUSTOM_PROTOCOL.MultiParamFixed)
-  MOV       R0, R0(+0,+44)
-  CMPIeq    R2, 1 ; NoArchCompensation Override
-  JMPcs     NoExtraPop
-  CMPI32eq  R6, EFI_IMAGE_MACHINE_IA32
-  JMPcs     NoExtraPop
-  POP32     R1
+  MOV       R0, R0(+3,+32)
+  ; Extra POP for the Arm-specific PUSH above
   CMPI32eq  R6, EFI_IMAGE_MACHINE_ARM
-  JMPcs     NoExtraPop
-  MOV       R0, R0(+0,+8)
-NoExtraPop:
+  JMPcc     @f
+  POP32     R1
+@@:
 
   MOVI      R1, 0xCCCCCCCCCCCCCCCC
   PUSHn     R1
@@ -265,8 +248,6 @@ NoExtraPop:
   RET
 
 section '.data' data readable writeable
-  NoArchCompensation:
-            dq 0 ; Set to 1 to disable arch specific CALLEX compensation
   gST:      dq ?
   Event:    dq ?
   Digits:   du "0123456789ABCDEF"
