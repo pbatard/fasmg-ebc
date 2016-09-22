@@ -30,6 +30,18 @@ element IP?     : R + 0x801
 ; Supporting macros
 ;
 
+macro @@ tail
+  match label, @f?
+    label tail
+    @b? equ @f?
+  end match
+  local anonymous
+  @f? equ anonymous
+end macro
+
+define @f?
+@@
+
 macro di width, val
   if (width = 0)
     db val
