@@ -80,30 +80,30 @@ typedef struct {
 	EFI_MULTIPARAM_NATIVE   MultiParamNative;
 } EFI_CUSTOM_PROTOCOL;
 
-EFI_STATUS Hello(VOID) {
+EFI_STATUS EFIAPI Hello(VOID) {
 	Print(L"Hello from Custom Protocol Driver\n");
 	return EFI_SUCCESS;
 }
 
-EFI_STATUS SingleParam32(UINT32 p1) {
+EFI_STATUS EFIAPI SingleParam32(UINT32 p1) {
 	Print(L"SingleParam32:\n");
 	Print(L"  p1 = 0x%08X\n", p1);
 	return EFI_SUCCESS;
 }
 
-EFI_STATUS SingleParam64(UINT64 p1) {
+EFI_STATUS EFIAPI SingleParam64(UINT64 p1) {
 	Print(L"SingleParam64:\n");
 	Print(L"  p1 = 0x%016llX\n", p1);
 	return EFI_SUCCESS;
 }
 
-EFI_STATUS SingleParamNative(UINTN p1) {
+EFI_STATUS EFIAPI SingleParamNative(UINTN p1) {
 	Print(L"SingleParamNative:\n");
 	Print(L"  p1 = " NATIVE_FORMAT L"\n", p1);
 	return EFI_SUCCESS;
 }
 
-EFI_STATUS MultiParamFixed(UINT32 p1, UINT64 p2, UINT64 p3, UINT64 p4, UINT32 p5, UINT32 p6, UINT64 p7) {
+EFI_STATUS EFIAPI MultiParamFixed(UINT32 p1, UINT64 p2, UINT64 p3, UINT64 p4, UINT32 p5, UINT32 p6, UINT64 p7) {
 	Print(L"CustomMultiParamFixed:\n");
 	Print(L"  p1 = 0x%08X\n", p1);
 	Print(L"  p2 = 0x%016llX\n", p2);
@@ -115,7 +115,7 @@ EFI_STATUS MultiParamFixed(UINT32 p1, UINT64 p2, UINT64 p3, UINT64 p4, UINT32 p5
 	return EFI_SUCCESS;
 }
 
-EFI_STATUS MultiParamNative(UINTN p1, UINTN p2, UINTN p3, UINTN p4, UINTN p5,
+EFI_STATUS EFIAPI MultiParamNative(UINTN p1, UINTN p2, UINTN p3, UINTN p4, UINTN p5,
 	UINTN p6, UINTN p7, UINTN p8, UINTN p9, UINTN p10, UINTN p11, UINTN p12) {
 	Print(L"CustomMultiParamNative:\n");
 	Print(L"  p1 = " NATIVE_FORMAT L"\n", p1);
