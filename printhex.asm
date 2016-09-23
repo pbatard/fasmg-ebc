@@ -24,11 +24,11 @@ Print:
   RET
 
 PrintHex:
-  MOVI      R6, 0
+  XOR       R6, R6
   MOV       R3, R6
   NOT       R4, R6
   MOVREL    R5, Digits
-  MOVREL    R7, Value
+  MOVREL    R7, HexStr
   ADD       R7, R6(4)
   PUSH      @R0(0,+16)
 Loop:
@@ -49,7 +49,7 @@ Loop:
   CMPIgte   R3, 16
   JMPcc     Loop
   POP       R1
-  MOVREL    R1, Value
+  MOVREL    R1, HexStr
   PUSH      R1
   CALL      Print
   POP       R1
@@ -101,7 +101,7 @@ EfiMain:
   MOVREL    R1, gST
   MOVn      @R1, @R0(EFI_MAIN_PARAMETERS.SystemTable)
 
-  MOVREL    R1, InitMsg
+  MOVREL    R1, EpMsg
   PUSH      R1
   CALL      Print
   POP       R1
@@ -117,11 +117,9 @@ section '.data' data readable writeable
   gST:      dq ?
   Event:    dq ?
   Digits:   du "0123456789ABCDEF"
-  Value:    du "0x1234567812345678", 0x0D, 0x0A
+  HexStr:   du "0x1234567812345678", 0x0D, 0x0A
             du 0x00
-  InitMsg:  du "Entry point: "
-            du 0x00
-  ExitMsg:  du "Press any key to exit", 0x0D, 0x0A
-            du 0x00
+  EpMsg:    du "Entry point: ", 0x00
+  ExitMsg:  du "Press any key to exit", 0x0D, 0x0A, 0x00
 
 section '.reloc' fixups data discardable

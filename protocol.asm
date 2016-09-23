@@ -38,14 +38,16 @@ Print:
   MOV       R0, R0(+2,0)
   RET
 
-PrintHex:
-  MOVI      R6, 0
+PrintHex32:
+  XOR       R6, R6
   MOV       R3, R6
-  NOT       R4, R6
+  NOT32     R4, R6
   MOVREL    R5, Digits
-  MOVREL    R7, Value
-  ADD       R7, R6(20)
-  PUSH      @R0(0,+16)
+  MOVREL    R7, HexStr
+  ADD       R7, R6(4)
+  MOV       R1, @R0(0,+16)
+  AND       R1, R4
+  PUSH      R1
 Loop:
   MOV       R1, @R0
   EXTNDD    R2, R6(4)
@@ -64,7 +66,7 @@ Loop:
   CMPIgte   R3, 8
   JMPcc     Loop
   POP       R1
-  MOVREL    R1, Value
+  MOVREL    R1, HexStr
   PUSH      R1
   CALL      Print
   POP       R1
@@ -76,7 +78,7 @@ LocateProtocolFailed:
   PUSH      R1
   CALL      Print
   POP       R1
-  CALL      PrintHex
+  CALL      PrintHex32
   POP       R7
   RET
 
@@ -103,11 +105,15 @@ EfiMain:
   MOVn      R1, @R1
   CALLEX    @R1(EFI_CUSTOM_PROTOCOL.Hello)
 
+  MOVREL    R1, ISAMsg
+  PUSH      R1
+  CALL      Print
+  POP       R1
   MOVREL    R1, CustomProtocolInterface
   MOVn      R1, @R1
   MOVn      R6, @R1(EFI_CUSTOM_PROTOCOL.Isa)
   PUSH      R6
-  CALL      PrintHex
+  CALL      PrintHex32
   POP       R6
 
   ; From UEFI 2.6, 21.9.3:
@@ -250,14 +256,13 @@ EfiMain:
 section '.data' data readable writeable
   gST:      dq ?
   Event:    dq ?
-  Digits:   du "0123456789ABCDEF"
-  Value:    du "  ISA = 0x12345678", 0x0D, 0x0A
-            du 0x00
-  LPMsg:    du "LocateProtocol: "
-            du 0x00
   CustomProtocolGuid:
             EFI_GUID { 0x1e81aff7, 0x5509, 0x4acc, {0xa9, 0x3f, 0x56, 0x55, 0x0d, 0xb1, 0xbd, 0xcc} }
   CustomProtocolInterface:
             rq 7
+  Digits:   du "0123456789ABCDEF"
+  ISAMsg:   du "  ISA = ", 0x00
+  HexStr:   du "0x12345678", 0x0D, 0x0A, 0x00
+  LPMsg:    du "LocateProtocol: ", 0x00
 
 section '.reloc' fixups data discardable
