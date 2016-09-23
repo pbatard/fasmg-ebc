@@ -238,6 +238,22 @@ struct EFI_BOOT_SERVICES
   CreateEventEx                VOID_PTR
 ends
 
+struct EFI_OPEN_PROTOCOL
+  Revision                     UINT32
+  ParentHandle                 EFI_HANDLE
+  SystemTable                  VOID_PTR
+  DeviceHandle                 EFI_HANDLE
+  FilePath                     VOID_PTR
+  Reserved                     VOID_PTR
+  LoadOptionsSize              UINT32
+  LoadOptions                  VOID_PTR
+  ImageBase                    VOID_PTR
+  ImageSize                    UINT64
+  ImageCodeType                INTN
+  ImageDataType                INTN
+  Unload                       VOID_PTR
+ends
+
 ; Symbols
 
 FALSE                         = 0
@@ -275,3 +291,10 @@ EFI_PROTOCOL_ERROR            = EFI_ERROR or 0x18
 EfiResetCold                  = 0
 EfiResetWarm                  = 1
 EfiResetShutdown              = 2
+
+EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL  = 0x00000001
+EFI_OPEN_PROTOCOL_GET_PROTOCOL        = 0x00000002
+EFI_OPEN_PROTOCOL_TEST_PROTOCOL       = 0x00000004
+EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER = 0x00000008
+EFI_OPEN_PROTOCOL_BY_DRIVER           = 0x00000010
+EFI_OPEN_PROTOCOL_EXCLUSIVE           = 0x00000020

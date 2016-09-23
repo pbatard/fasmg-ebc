@@ -69,8 +69,12 @@ if not exist %QEMU_FIRMWARE% (
 
 if [%UEFI_EXT%]==[arm] (
   echo.
-  echo Notice: As of 2016.09.20, EBC support for ARM is not integrated into EDK2
-  echo which means a specially patched UEFI firmware is required for EBC to work...
+  echo Notice: EBC support for ARM is not yet integrated into EDK2
+  echo This means that a specially patched UEFI firmware is required for
+  echo EBC to work on ARM...
+  echo However, please be mindful that there may exist residual issues
+  echo that you need to be aware of regarding native CALLEX and parameter
+  echo queueing. Please see the 'protocol.asm' sample for details.
   echo.
 )
 
