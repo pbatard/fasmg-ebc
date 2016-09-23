@@ -30,17 +30,19 @@ element IP?     : R + 0x801
 ; Supporting macros
 ;
 
-macro @@ tail
-  match label, @f?
-    label tail
-    @b? equ @f?
-  end match
-  local anonymous
-  @f? equ anonymous
-end macro
+repeat 10
+  macro @#% tail
+    match label, @#%#f?
+      label tail
+      @#%#b? equ @#%#f?
+    end match
+    local anonymous
+    @#%#f? equ anonymous
+  end macro
 
-define @f?
-@@
+  define @#%#f?
+  @#%
+end repeat
 
 macro di width, val
   if (width = 0)

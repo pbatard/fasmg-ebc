@@ -48,7 +48,7 @@ PrintHex32:
   MOV       R1, @R0(0,+16)
   AND       R1, R4
   PUSH      R1
-Loop:
+@1:
   MOV       R1, @R0
   EXTNDD    R2, R6(4)
   MUL       R2, R3(-7)
@@ -64,7 +64,7 @@ Loop:
   AND       @R0, R4
   ADD       R3, R6(1)
   CMPIgte   R3, 8
-  JMPcc     Loop
+  JMPcc     @1b
   POP       R1
   MOVREL    R1, HexStr
   PUSH      R1
@@ -207,9 +207,9 @@ EfiMain:
   PUSHn     R1
   ; Pad to 64 bit for ARM, since this parameter ends up as a register argument
   CMPI32eq  R6, EFI_IMAGE_MACHINE_ARM
-  JMPcc     @f
+  JMPcc     @1f
   PUSH32    R1
-@@:
+@1:
 
   MOVREL    R1, CustomProtocolInterface
   MOVn      R1, @R1
@@ -217,9 +217,9 @@ EfiMain:
   MOV       R0, R0(+3,+32)
   ; Extra POP for the Arm-specific PUSH above
   CMPI32eq  R6, EFI_IMAGE_MACHINE_ARM
-  JMPcc     @f
+  JMPcc     @1f
   POP32     R1
-@@:
+@1:
 
   MOVI      R1, 0xCCCCCCCCCCCCCCCC
   PUSHn     R1

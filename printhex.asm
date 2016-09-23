@@ -31,7 +31,7 @@ PrintHex:
   MOVREL    R7, HexStr
   ADD       R7, R6(4)
   PUSH      @R0(0,+16)
-Loop:
+@1:
   MOV       R1, @R0
   EXTNDD    R2, R6(4)
   MUL       R2, R3(-15)
@@ -47,7 +47,7 @@ Loop:
   AND       @R0, R4
   ADD       R3, R6(1)
   CMPIgte   R3, 16
-  JMPcc     Loop
+  JMPcc     @1b
   POP       R1
   MOVREL    R1, HexStr
   PUSH      R1
