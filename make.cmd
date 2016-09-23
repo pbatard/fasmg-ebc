@@ -72,9 +72,9 @@ if [%UEFI_EXT%]==[arm] (
   echo Notice: EBC support for ARM is not yet integrated into EDK2
   echo This means that a specially patched UEFI firmware is required for
   echo EBC to work on ARM...
-  echo However, please be mindful that there may exist residual issues
-  echo that you need to be aware of regarding native CALLEX and parameter
-  echo queueing. Please see the 'protocol.asm' sample for details.
+  echo However, please be mindful that there exist residual issues which
+  echo you need to be aware of regarding native CALLEX and parameter
+  echo queueing. For details, please see the 'protocol.asm' sample.
   echo.
 )
 

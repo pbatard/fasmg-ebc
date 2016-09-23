@@ -292,9 +292,29 @@ EfiResetCold                  = 0
 EfiResetWarm                  = 1
 EfiResetShutdown              = 2
 
+EfiReservedMemoryType         = 0
+EfiLoaderCode                 = 1
+EfiLoaderData                 = 2
+EfiBootServicesCode           = 3
+EfiBootServicesData           = 4
+EfiRuntimeServicesCode        = 5
+EfiRuntimeServicesData        = 6
+EfiConventionalMemory         = 7
+EfiUnusableMemory             = 8
+EfiACPIReclaimMemory          = 9
+EfiACPIMemoryNVS              = 10
+EfiMemoryMappedIO             = 11
+EfiMemoryMappedIOPortSpace    = 12
+EfiPalCode                    = 13
+EfiMaxMemoryType              = 14
+
 EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL  = 0x00000001
 EFI_OPEN_PROTOCOL_GET_PROTOCOL        = 0x00000002
 EFI_OPEN_PROTOCOL_TEST_PROTOCOL       = 0x00000004
 EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER = 0x00000008
 EFI_OPEN_PROTOCOL_BY_DRIVER           = 0x00000010
 EFI_OPEN_PROTOCOL_EXCLUSIVE           = 0x00000020
+
+AllHandles                    = 0
+ByRegisterNotify              = 1
+ByProtocol                    = 2
