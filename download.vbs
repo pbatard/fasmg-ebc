@@ -20,11 +20,10 @@ Sub DownloadHttp(Url, File)
   Set xHttp = createobject("Microsoft.XMLHTTP")
   Set bStrm = createobject("Adodb.Stream")
   Call xHttp.Open("GET", Url, False)
-  If NO_CACHE = True Then
-    Call xHttp.SetRequestHeader("If-None-Match", "some-random-string")
-    Call xHttp.SetRequestHeader("Cache-Control", "no-cache,max-age=0")
-    Call xHttp.SetRequestHeader("Pragma", "no-cache")
-  End If
+  ' Disable caching for downloads
+  Call xHttp.SetRequestHeader("If-None-Match", "some-random-string")
+  Call xHttp.SetRequestHeader("Cache-Control", "no-cache,max-age=0")
+  Call xHttp.SetRequestHeader("Pragma", "no-cache")
   Call xHttp.Send()
   If Not xHttp.Status = 200 Then
     Call WScript.Echo("Unable to access file - Error " & xHttp.Status)

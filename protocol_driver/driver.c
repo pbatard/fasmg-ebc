@@ -1,7 +1,6 @@
 /*
  * Simple UEFI driver for protocol testing
  * Copyright © 2016 Pete Batard <pete@akeo.ie> - Public Domain
- * See COPYING for the full licensing terms.
  */
 #include <efi.h>
 #include <efilib.h>
