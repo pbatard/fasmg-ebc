@@ -1,5 +1,5 @@
 *.efi
-!Protocol/*.efi
+!protocol_driver/*.efi
 *.exe
 *.fd
 image

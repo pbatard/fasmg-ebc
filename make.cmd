@@ -95,7 +95,7 @@ if not [%RUN_DEBUGGER%]==[] (
 ) else (
   if [%FILE%]==[protocol] (
     copy %FILE%.efi image\%FILE%.efi >NUL
-    copy Protocol\driver_%UEFI_EXT%.efi image > NUL
+    copy protocol_driver\driver_%UEFI_EXT%.efi image > NUL
     echo fs0: > image\efi\boot\startup.nsh
     echo load driver_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
     echo %FILE%.efi >> image\efi\boot\startup.nsh
