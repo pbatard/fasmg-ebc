@@ -5,5 +5,5 @@ validate EBC to native access, and especially the marshalling of CALLEX
 parameters.
 
 These were compiled from the driver.c source on Debian 8.0 (Sid),
-using the included Makefile. Note that you must have gnu-efi in the same
-directory for compilation.
+using the included Makefile. Note that you will should initialize the
+gnu-efi submodule in this directory to be able to compile the driver.

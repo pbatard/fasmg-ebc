@@ -1,0 +1,1 @@
+This directory contains the demo samples from the EBC Debugger.
