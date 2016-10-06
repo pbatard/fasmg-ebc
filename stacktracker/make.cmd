@@ -9,6 +9,7 @@ set FIRMWARE_BASENAME=QEMU_EFI
 set FILE=stacktracker
 set RUN_QEMU=
 set SERIAL_LOG=
+set COPY_FW=
 
 :loop
 if [%1]==[] goto next
@@ -24,6 +25,8 @@ if [%1]==[qemu] (
   set FIRMWARE_BASENAME=OVMF
 ) else if [%1]==[serial] (
   set QEMU_OPTS=%QEMU_OPTS% -serial file:serial_%UEFI_EXT%.log
+) else if [%1]==[copy] (
+  set COPY_FW=1
 ) else (
   set FILE=%1
   if not exist "%1.asm" (
@@ -45,7 +48,9 @@ if [%QEMU_ARCH%]==[arm] set QEMU_OPTS=%QEMU_OPTS% -M virt -cpu cortex-a15 %QEMU_
 
 set QEMU_FIRMWARE=%FIRMWARE_BASENAME%_%UEFI_EXT%.fd
 set QEMU_EXE=qemu-system-%QEMU_ARCH%w.exe
-if not exist %QEMU_FIRMWARE% (
+if not [%COPY_FW%]==[] (
+  copy "\\debian\src\edk2\Build\ArmVirtQemu-ARM\RELEASE_GCC5\FV\QEMU_EFI.fd" QEMU_EFI_ARM.fd
+) else if not exist %QEMU_FIRMWARE% (
   call cscript /nologo "%~dp0\..\download.vbs" %FIRMWARE_BASENAME% %UEFI_EXT%
   if errorlevel 1 goto end
 )

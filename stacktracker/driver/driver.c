@@ -64,8 +64,9 @@ static EFI_STATUS common_base(INTN val, UINT64* p)
 		r += (p[i] == c) ? (1 << i) : 0;
 	}
 	if (r != 0x0F) {
+		Print(L"MultiParam%d failed (0x%X):\n", val, r);
 		for (i = 0; i < 4; i++)
-			Print(L"p%d = 0x%016llX\n", i, p[i]);
+			Print(L"  p%d = 0x%016llX\n", i, p[i]);
 		return EFI_INVALID_PARAMETER;
 	}
 	return EFI_SUCCESS;
@@ -92,79 +93,79 @@ EFI_STATUS EFIAPI MultiParam2(UINT64 p1, UINTN p2, UINT64 p3, UINT64 p4)
 EFI_STATUS EFIAPI MultiParam3(UINTN p1, UINTN p2, UINT64 p3, UINT64 p4)
 {
 	UINT64 p[4] = { (UINT64)p1, (UINT64)p2, (UINT64)p3, (UINT64)p4 };
-	return common_base(0, p);
+	return common_base(3, p);
 }
 
 EFI_STATUS EFIAPI MultiParam4(UINT64 p1, UINT64 p2, UINTN p3, UINT64 p4)
 {
 	UINT64 p[4] = { (UINT64)p1, (UINT64)p2, (UINT64)p3, (UINT64)p4 };
-	return common_base(0, p);
+	return common_base(4, p);
 }
 
 EFI_STATUS EFIAPI MultiParam5(UINTN p1, UINT64 p2, UINTN p3, UINT64 p4)
 {
 	UINT64 p[4] = { (UINT64)p1, (UINT64)p2, (UINT64)p3, (UINT64)p4 };
-	return common_base(0, p);
+	return common_base(5, p);
 }
 
 EFI_STATUS EFIAPI MultiParam6(UINT64 p1, UINTN p2, UINTN p3, UINT64 p4)
 {
 	UINT64 p[4] = { (UINT64)p1, (UINT64)p2, (UINT64)p3, (UINT64)p4 };
-	return common_base(0, p);
+	return common_base(6, p);
 }
 
 EFI_STATUS EFIAPI MultiParam7(UINTN p1, UINTN p2, UINTN p3, UINT64 p4)
 {
 	UINT64 p[4] = { (UINT64)p1, (UINT64)p2, (UINT64)p3, (UINT64)p4 };
-	return common_base(0, p);
+	return common_base(7, p);
 }
 
 EFI_STATUS EFIAPI MultiParam8(UINT64 p1, UINT64 p2, UINT64 p3, UINTN p4)
 {
 	UINT64 p[4] = { (UINT64)p1, (UINT64)p2, (UINT64)p3, (UINT64)p4 };
-	return common_base(0, p);
+	return common_base(8, p);
 }
 
 EFI_STATUS EFIAPI MultiParam9(UINTN p1, UINT64 p2, UINT64 p3, UINTN p4)
 {
 	UINT64 p[4] = { (UINT64)p1, (UINT64)p2, (UINT64)p3, (UINT64)p4 };
-	return common_base(1, p);
+	return common_base(9, p);
 }
 
 EFI_STATUS EFIAPI MultiParam10(UINT64 p1, UINTN p2, UINT64 p3, UINTN p4)
 {
 	UINT64 p[4] = { (UINT64)p1, (UINT64)p2, (UINT64)p3, (UINT64)p4 };
-	return common_base(2, p);
+	return common_base(10, p);
 }
 
 EFI_STATUS EFIAPI MultiParam11(UINTN p1, UINTN p2, UINT64 p3, UINTN p4)
 {
 	UINT64 p[4] = { (UINT64)p1, (UINT64)p2, (UINT64)p3, (UINT64)p4 };
-	return common_base(0, p);
+	return common_base(11, p);
 }
 
 EFI_STATUS EFIAPI MultiParam12(UINT64 p1, UINT64 p2, UINTN p3, UINTN p4)
 {
 	UINT64 p[4] = { (UINT64)p1, (UINT64)p2, (UINT64)p3, (UINT64)p4 };
-	return common_base(0, p);
+	return common_base(12, p);
 }
 
 EFI_STATUS EFIAPI MultiParam13(UINTN p1, UINT64 p2, UINTN p3, UINTN p4)
 {
 	UINT64 p[4] = { (UINT64)p1, (UINT64)p2, (UINT64)p3, (UINT64)p4 };
-	return common_base(0, p);
+	return common_base(13, p);
 }
 
 EFI_STATUS EFIAPI MultiParam14(UINT64 p1, UINTN p2, UINTN p3, UINTN p4)
 {
 	UINT64 p[4] = { (UINT64)p1, (UINT64)p2, (UINT64)p3, (UINT64)p4 };
-	return common_base(0, p);
+	return common_base(14, p);
 }
 
 EFI_STATUS EFIAPI MultiParam15(UINTN p1, UINTN p2, UINTN p3, UINTN p4)
 {
 	UINT64 p[4] = { (UINT64)p1, (UINT64)p2, (UINT64)p3, (UINT64)p4 };
-	return common_base(0, p);
+	return common_base(15, p);
 }
 
 static EFI_CUSTOM_PROTOCOL CustomProtocol = {

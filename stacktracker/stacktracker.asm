@@ -84,7 +84,14 @@ CallFailed:
   POP       R1
   CALL      PrintHex32
   POP       R7
-  JMP       Out
+  JMP       Exit
+  
+Failed:
+  MOVREL    R1, FailMsg
+  PUSH      R1
+  CALL      Print
+  POP       R1
+  JMP       Exit
 
 EfiMain:
   MOVREL    R1, gST
@@ -106,6 +113,10 @@ EfiMain:
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     CallFailed
 
+  ; Push an extra 64 bit value so that we don't end up with a
+  ; test that passes due to a lucky match with previous entries
+  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  PUSH64    R1
   MOVIq     R1, 0x4B4B4B4B4A4A4A4A
   PUSH64    R1
   MOVIq     R1, 0x3B3B3B3B3A3A3A3A
@@ -117,13 +128,89 @@ EfiMain:
   MOVREL    R1, CustomProtocolInterface
   MOVn      R1, @R1
   CALLEX    @R1(EFI_CUSTOM_PROTOCOL.MultiParam0)
-  MOV       R0, R0(+0,+32)
-
+  MOV       R0, R0(+0,+40)
   MOVREL    R1, MP0Msg
   CMPI32eq  R7, EFI_SUCCESS
-  JMPcc     CallFailed
+  JMPcc     Failed
 
-Out:
+  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  PUSH64    R1
+  MOVIq     R1, 0x4B4B4B4B4A4A4A4A
+  PUSH64    R1
+  MOVIq     R1, 0x3B3B3B3B3A3A3A3A
+  PUSH64    R1
+  MOVIq     R1, 0x2B2B2B2B2A2A2A2A
+  PUSH64    R1
+  MOVIq     R1, 0x1B1B1B1B1A1A1A1A
+  PUSHn     R1
+  MOVREL    R1, CustomProtocolInterface
+  MOVn      R1, @R1
+  CALLEX    @R1(EFI_CUSTOM_PROTOCOL.MultiParam1)
+  MOV       R0, R0(+1,+32)
+  MOVREL    R1, MP0Msg
+  CMPI32eq  R7, EFI_SUCCESS
+  JMPcc     Failed
+
+  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  PUSH64    R1
+  MOVIq     R1, 0x4B4B4B4B4A4A4A4A
+  PUSH64    R1
+  MOVIq     R1, 0x3B3B3B3B3A3A3A3A
+  PUSH64    R1
+  MOVIq     R1, 0x2B2B2B2B2A2A2A2A
+  PUSHn     R1
+  MOVIq     R1, 0x1B1B1B1B1A1A1A1A
+  PUSH64    R1
+  MOVREL    R1, CustomProtocolInterface
+  MOVn      R1, @R1
+  CALLEX    @R1(EFI_CUSTOM_PROTOCOL.MultiParam2)
+  MOV       R0, R0(+1,+32)
+  MOVREL    R1, MP0Msg
+  CMPI32eq  R7, EFI_SUCCESS
+  JMPcc     Failed
+
+  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  PUSH64    R1
+  MOVIq     R1, 0x4B4B4B4B4A4A4A4A
+  PUSH64    R1
+  MOVIq     R1, 0x3B3B3B3B3A3A3A3A
+  PUSH64    R1
+  MOVIq     R1, 0x2B2B2B2B2A2A2A2A
+  PUSHn     R1
+  MOVIq     R1, 0x1B1B1B1B1A1A1A1A
+  PUSHn     R1
+  MOVREL    R1, CustomProtocolInterface
+  MOVn      R1, @R1
+  CALLEX    @R1(EFI_CUSTOM_PROTOCOL.MultiParam3)
+  MOV       R0, R0(+2,+24)
+  MOVREL    R1, MP0Msg
+  CMPI32eq  R7, EFI_SUCCESS
+  JMPcc     Failed
+
+  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  PUSH64    R1
+  MOVIq     R1, 0x4B4B4B4B4A4A4A4A
+  PUSH64    R1
+  MOVIq     R1, 0x3B3B3B3B3A3A3A3A
+  PUSHn     R1
+  MOVIq     R1, 0x2B2B2B2B2A2A2A2A
+  PUSH64    R1
+  MOVIq     R1, 0x1B1B1B1B1A1A1A1A
+  PUSH64    R1
+  MOVREL    R1, CustomProtocolInterface
+  MOVn      R1, @R1
+  CALLEX    @R1(EFI_CUSTOM_PROTOCOL.MultiParam4)
+  MOV       R0, R0(+1,+32)
+  MOVREL    R1, MP0Msg
+  CMPI32eq  R7, EFI_SUCCESS
+  JMPcc     Failed
+
+  MOVREL    R1, PassMsg
+  PUSH      R1
+  CALL      Print
+  POP       R1
+
+Exit:
   RET
 
 section '.data' data readable writeable
@@ -137,5 +224,7 @@ section '.data' data readable writeable
   HexStr:   du "0x12345678", 0x0D, 0x0A, 0x00
   LPMsg:    du "LocateProtocol: ", 0x00
   MP0Msg:   du "MultiParam0: ", 0x00
+  PassMsg:  du "Test passed", 0x0D, 0x0A, 0x00
+  FailMsg:  du "TEST FAILED", 0x0D, 0x0A, 0x00
 
 section '.reloc' fixups data discardable
