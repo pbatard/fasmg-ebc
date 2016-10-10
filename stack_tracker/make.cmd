@@ -1,4 +1,5 @@
 @echo off
+setlocal EnableDelayedExpansion
 set include=..\include
 
 set UEFI_EXT=arm
@@ -6,10 +7,10 @@ set QEMU_ARCH=arm
 set QEMU_PATH=C:\Program Files\qemu\
 set QEMU_OPTS=-net none -monitor none -parallel none
 set FIRMWARE_BASENAME=QEMU_EFI
-set FILE=stacktracker
 set RUN_QEMU=
 set SERIAL_LOG=
 set COPY_FW=
+set FILE_LIST=matrix max
 
 :loop
 if [%1]==[] goto next
@@ -38,9 +39,11 @@ shift
 goto loop
 
 :next
-echo fasmg %FILE%.asm %FILE%.efi
-fasmg %FILE%.asm %FILE%.efi
-if not %errorlevel%==0 goto end
+for %%f in (%FILE_LIST%) do (
+  echo fasmg %%f.asm %%f.efi
+  fasmg %%f.asm %%f.efi
+  if errorlevel 1 goto end
+)
 
 if [%RUN_QEMU%]==[] goto end
 
@@ -59,14 +62,14 @@ if not exist image\efi\boot mkdir image\efi\boot
 del image\efi\boot\boot*.efi > NUL 2>&1
 del image\efi\boot\startup.nsh > NUL 2>&1
 
-if [%FILE%]==[stacktracker] (
-  copy %FILE%.efi image\%FILE%.efi >NUL
-  copy driver\driver_%UEFI_EXT%.efi image > NUL
-  echo fs0: > image\efi\boot\startup.nsh
-  echo load driver_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
-  echo %FILE%.efi >> image\efi\boot\startup.nsh
-) else (
-  copy %FILE%.efi image\efi\boot\boot%UEFI_EXT%.efi >NUL
+for %%f in (%FILE_LIST%) do (
+  copy %%f.efi image\%%f.efi >NUL
+)  
+copy driver\driver_%UEFI_EXT%.efi image > NUL
+echo fs0: > image\efi\boot\startup.nsh
+echo load driver_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
+for %%f in (%FILE_LIST%) do (
+  echo %%f.efi >> image\efi\boot\startup.nsh
 )
 
 "%QEMU_PATH%%QEMU_EXE%" %QEMU_OPTS% -L . -bios %QEMU_FIRMWARE% -hda fat:image
