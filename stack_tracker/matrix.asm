@@ -9,15 +9,15 @@ include 'head.inc'
 
   ; Push an extra 64 bit value so that we don't end up with a
   ; test that passes due to a lucky match with previous entries
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
-  MOVIq     R1, 0x4B4B4B4B4A4A4A4A
+  MOVIq     R1, 0x4A4A4A4A
   PUSHn     R1
-  MOVIq     R1, 0x3B3B3B3B3A3A3A3A
+  MOVIq     R1, 0x3A3A3A3A
   PUSHn     R1
-  MOVIq     R1, 0x2B2B2B2B2A2A2A2A
+  MOVIq     R1, 0x2A2A2A2A
   PUSHn     R1
-  MOVIq     R1, 0x1B1B1B1B1A1A1A1A
+  MOVIq     R1, 0x1A1A1A1A
   PUSHn     R1
   MOVREL    R1, CustomProtocolInterface
   MOVn      R1, @R1
@@ -26,13 +26,13 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
-  MOVIq     R1, 0x4B4B4B4B4A4A4A4A
+  MOVIq     R1, 0x4A4A4A4A
   PUSHn     R1
-  MOVIq     R1, 0x3B3B3B3B3A3A3A3A
+  MOVIq     R1, 0x3A3A3A3A
   PUSHn     R1
-  MOVIq     R1, 0x2B2B2B2B2A2A2A2A
+  MOVIq     R1, 0x2A2A2A2A
   PUSHn     R1
   MOVIq     R1, 0x1B1B1B1B1A1A1A1A
   PUSH64    R1
@@ -43,15 +43,15 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
-  MOVIq     R1, 0x4B4B4B4B4A4A4A4A
+  MOVIq     R1, 0x4A4A4A4A
   PUSHn     R1
-  MOVIq     R1, 0x3B3B3B3B3A3A3A3A
+  MOVIq     R1, 0x3A3A3A3A
   PUSHn     R1
   MOVIq     R1, 0x2B2B2B2B2A2A2A2A
   PUSH64    R1
-  MOVIq     R1, 0x1B1B1B1B1A1A1A1A
+  MOVIq     R1, 0x1A1A1A1A
   PUSHn     R1
   MOVREL    R1, CustomProtocolInterface
   MOVn      R1, @R1
@@ -60,11 +60,11 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
-  MOVIq     R1, 0x4B4B4B4B4A4A4A4A
+  MOVIq     R1, 0x4A4A4A4A
   PUSHn     R1
-  MOVIq     R1, 0x3B3B3B3B3A3A3A3A
+  MOVIq     R1, 0x3A3A3A3A
   PUSHn     R1
   MOVIq     R1, 0x2B2B2B2B2A2A2A2A
   PUSH64    R1
@@ -77,15 +77,15 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
-  MOVIq     R1, 0x4B4B4B4B4A4A4A4A
+  MOVIq     R1, 0x4A4A4A4A
   PUSHn     R1
   MOVIq     R1, 0x3B3B3B3B3A3A3A3A
   PUSH64    R1
-  MOVIq     R1, 0x2B2B2B2B2A2A2A2A
+  MOVIq     R1, 0x2A2A2A2A
   PUSHn     R1
-  MOVIq     R1, 0x1B1B1B1B1A1A1A1A
+  MOVIq     R1, 0x1A1A1A1A
   PUSHn     R1
   MOVREL    R1, CustomProtocolInterface
   MOVn      R1, @R1
@@ -94,13 +94,13 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
-  MOVIq     R1, 0x4B4B4B4B4A4A4A4A
+  MOVIq     R1, 0x4A4A4A4A
   PUSHn     R1
   MOVIq     R1, 0x3B3B3B3B3A3A3A3A
   PUSH64    R1
-  MOVIq     R1, 0x2B2B2B2B2A2A2A2A
+  MOVIq     R1, 0x2A2A2A2A
   PUSHn     R1
   MOVIq     R1, 0x1B1B1B1B1A1A1A1A
   PUSH64    R1
@@ -111,15 +111,15 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
-  MOVIq     R1, 0x4B4B4B4B4A4A4A4A
+  MOVIq     R1, 0x4A4A4A4A
   PUSHn     R1
   MOVIq     R1, 0x3B3B3B3B3A3A3A3A
   PUSH64    R1
   MOVIq     R1, 0x2B2B2B2B2A2A2A2A
   PUSH64    R1
-  MOVIq     R1, 0x1B1B1B1B1A1A1A1A
+  MOVIq     R1, 0x1A1A1A1A
   PUSHn     R1
   MOVREL    R1, CustomProtocolInterface
   MOVn      R1, @R1
@@ -128,9 +128,9 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
-  MOVIq     R1, 0x4B4B4B4B4A4A4A4A
+  MOVIq     R1, 0x4A4A4A4A
   PUSHn     R1
   MOVIq     R1, 0x3B3B3B3B3A3A3A3A
   PUSH64    R1
@@ -145,15 +145,15 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
   MOVIq     R1, 0x4B4B4B4B4A4A4A4A
   PUSH64    R1
-  MOVIq     R1, 0x3B3B3B3B3A3A3A3A
+  MOVIq     R1, 0x3A3A3A3A
   PUSHn     R1
-  MOVIq     R1, 0x2B2B2B2B2A2A2A2A
+  MOVIq     R1, 0x2A2A2A2A
   PUSHn     R1
-  MOVIq     R1, 0x1B1B1B1B1A1A1A1A
+  MOVIq     R1, 0x1A1A1A1A
   PUSHn     R1
   MOVREL    R1, CustomProtocolInterface
   MOVn      R1, @R1
@@ -162,13 +162,13 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
   MOVIq     R1, 0x4B4B4B4B4A4A4A4A
   PUSH64    R1
-  MOVIq     R1, 0x3B3B3B3B3A3A3A3A
+  MOVIq     R1, 0x3A3A3A3A
   PUSHn     R1
-  MOVIq     R1, 0x2B2B2B2B2A2A2A2A
+  MOVIq     R1, 0x2A2A2A2A
   PUSHn     R1
   MOVIq     R1, 0x1B1B1B1B1A1A1A1A
   PUSH64    R1
@@ -179,15 +179,15 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
   MOVIq     R1, 0x4B4B4B4B4A4A4A4A
   PUSH64    R1
-  MOVIq     R1, 0x3B3B3B3B3A3A3A3A
+  MOVIq     R1, 0x3A3A3A3A
   PUSHn     R1
   MOVIq     R1, 0x2B2B2B2B2A2A2A2A
   PUSH64    R1
-  MOVIq     R1, 0x1B1B1B1B1A1A1A1A
+  MOVIq     R1, 0x1A1A1A1A
   PUSHn     R1
   MOVREL    R1, CustomProtocolInterface
   MOVn      R1, @R1
@@ -196,11 +196,11 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
   MOVIq     R1, 0x4B4B4B4B4A4A4A4A
   PUSH64    R1
-  MOVIq     R1, 0x3B3B3B3B3A3A3A3A
+  MOVIq     R1, 0x3A3A3A3A
   PUSHn     R1
   MOVIq     R1, 0x2B2B2B2B2A2A2A2A
   PUSH64    R1
@@ -213,15 +213,15 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
   MOVIq     R1, 0x4B4B4B4B4A4A4A4A
   PUSH64    R1
   MOVIq     R1, 0x3B3B3B3B3A3A3A3A
   PUSH64    R1
-  MOVIq     R1, 0x2B2B2B2B2A2A2A2A
+  MOVIq     R1, 0x2A2A2A2A
   PUSHn     R1
-  MOVIq     R1, 0x1B1B1B1B1A1A1A1A
+  MOVIq     R1, 0x1A1A1A1A
   PUSHn     R1
   MOVREL    R1, CustomProtocolInterface
   MOVn      R1, @R1
@@ -230,13 +230,13 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
   MOVIq     R1, 0x4B4B4B4B4A4A4A4A
   PUSH64    R1
   MOVIq     R1, 0x3B3B3B3B3A3A3A3A
   PUSH64    R1
-  MOVIq     R1, 0x2B2B2B2B2A2A2A2A
+  MOVIq     R1, 0x2A2A2A2A
   PUSHn     R1
   MOVIq     R1, 0x1B1B1B1B1A1A1A1A
   PUSH64    R1
@@ -247,7 +247,7 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
   MOVIq     R1, 0x4B4B4B4B4A4A4A4A
   PUSH64    R1
@@ -255,7 +255,7 @@ include 'head.inc'
   PUSH64    R1
   MOVIq     R1, 0x2B2B2B2B2A2A2A2A
   PUSH64    R1
-  MOVIq     R1, 0x1B1B1B1B1A1A1A1A
+  MOVIq     R1, 0x1A1A1A1A
   PUSHn     R1
   MOVREL    R1, CustomProtocolInterface
   MOVn      R1, @R1
@@ -264,7 +264,7 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-  MOVIq     R1, 0x5B5B5B5B5A5A5A5A
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
   PUSH64    R1
   MOVIq     R1, 0x4B4B4B4B4A4A4A4A
   PUSH64    R1

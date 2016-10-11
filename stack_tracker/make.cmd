@@ -2,6 +2,7 @@
 setlocal EnableDelayedExpansion
 set include=..\include
 
+set FILE_LIST=matrix max cloaked shutdown
 set UEFI_EXT=arm
 set QEMU_ARCH=arm
 set QEMU_PATH=C:\Program Files\qemu\
@@ -10,7 +11,6 @@ set FIRMWARE_BASENAME=QEMU_EFI
 set RUN_QEMU=
 set SERIAL_LOG=
 set COPY_FW=
-set FILE_LIST=matrix max shutdown
 
 :loop
 if [%1]==[] goto next
