@@ -30,6 +30,7 @@ struct EFI_CUSTOM_PROTOCOL
   MultiParam15      VOID_PTR
   MaxParams64       VOID_PTR
   MaxParamsMixed    VOID_PTR
+  MaxParamsNatural  VOID_PTR
 ends
 
 section '.text' code executable readable
@@ -151,7 +152,9 @@ EfiMain:
   MOVREL    R1, CustomProtocolInterface
   MOVn      R1, @R1
   CALLEX    @R1(EFI_CUSTOM_PROTOCOL.MaxParams64)
-  MOV       R0, R0(+0,+136)
+  ; Test ADD operation on R0 while we're at it
+  MOVI      R1, 136
+  ADD       R0, R1
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
@@ -193,6 +196,47 @@ EfiMain:
   MOVn      R1, @R1
   CALLEX    @R1(EFI_CUSTOM_PROTOCOL.MaxParamsMixed)
   MOV       R0, R0(+8,+72)
+  CMPI32eq  R7, EFI_SUCCESS
+  JMPcc     Failed
+
+  MOVIq     R1, 0xDEADBEEFDEADBEEF
+  PUSH64    R1
+  MOVIq     R1, 0xFFFFFFFF
+  PUSHn     R1
+  MOVIq     R1, 0xEEEEEEEE
+  PUSHn     R1
+  MOVIq     R1, 0xDDDDDDDD
+  PUSHn     R1
+  MOVIq     R1, 0xCCCCCCCC
+  PUSHn     R1
+  MOVIq     R1, 0xBBBBBBBB
+  PUSHn     R1
+  MOVIq     R1, 0xAAAAAAAA
+  PUSHn     R1
+  MOVIq     R1, 0x99999999
+  PUSHn     R1
+  MOVIq     R1, 0x88888888
+  PUSHn     R1
+  MOVIq     R1, 0x77777777
+  PUSHn     R1
+  MOVIq     R1, 0x66666666
+  PUSHn     R1
+  MOVIq     R1, 0x55555555
+  PUSHn     R1
+  MOVIq     R1, 0x44444444
+  PUSHn     R1
+  MOVIq     R1, 0x33333333
+  PUSHn     R1
+  MOVIq     R1, 0x22222222
+  PUSHn     R1
+  MOVIq     R1, 0x11111111
+  PUSHn     R1
+  MOVIq     R1, 0x00000000
+  PUSHn     R1
+  MOVREL    R1, CustomProtocolInterface
+  MOVn      R1, @R1
+  CALLEX    @R1(EFI_CUSTOM_PROTOCOL.MaxParamsNatural)
+  MOV       R0, R0(+16,+8)
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 

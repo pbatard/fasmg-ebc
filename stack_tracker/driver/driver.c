@@ -33,26 +33,29 @@ typedef EFI_STATUS (EFIAPI *EFI_MAXPARAMS64) (UINT64, UINT64, UINT64, UINT64, UI
 	UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64);
 typedef EFI_STATUS (EFIAPI *EFI_MAXPARAMSMIXED) (UINTN, UINT64, UINTN, UINT64, UINTN, UINT64,
 	UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64);
+typedef EFI_STATUS(EFIAPI *EFI_MAXPARAMSNATURAL) (UINTN, UINTN, UINTN, UINTN, UINTN, UINTN,
+	UINTN, UINTN, UINTN, UINTN, UINTN, UINTN, UINTN, UINTN, UINTN, UINTN);
 
 typedef struct {
-	EFI_MULTIPARAM0     MultiParam0;
-	EFI_MULTIPARAM1     MultiParam1;
-	EFI_MULTIPARAM2     MultiParam2;
-	EFI_MULTIPARAM3     MultiParam3;
-	EFI_MULTIPARAM4     MultiParam4;
-	EFI_MULTIPARAM5     MultiParam5;
-	EFI_MULTIPARAM6     MultiParam6;
-	EFI_MULTIPARAM7     MultiParam7;
-	EFI_MULTIPARAM8     MultiParam8;
-	EFI_MULTIPARAM9     MultiParam9;
-	EFI_MULTIPARAM10    MultiParam10;
-	EFI_MULTIPARAM11    MultiParam11;
-	EFI_MULTIPARAM12    MultiParam12;
-	EFI_MULTIPARAM13    MultiParam13;
-	EFI_MULTIPARAM14    MultiParam14;
-	EFI_MULTIPARAM15    MultiParam15;
-	EFI_MAXPARAMS64     MaxParams64;
-	EFI_MAXPARAMSMIXED  MaxParamsMixed;
+	EFI_MULTIPARAM0      MultiParam0;
+	EFI_MULTIPARAM1      MultiParam1;
+	EFI_MULTIPARAM2      MultiParam2;
+	EFI_MULTIPARAM3      MultiParam3;
+	EFI_MULTIPARAM4      MultiParam4;
+	EFI_MULTIPARAM5      MultiParam5;
+	EFI_MULTIPARAM6      MultiParam6;
+	EFI_MULTIPARAM7      MultiParam7;
+	EFI_MULTIPARAM8      MultiParam8;
+	EFI_MULTIPARAM9      MultiParam9;
+	EFI_MULTIPARAM10     MultiParam10;
+	EFI_MULTIPARAM11     MultiParam11;
+	EFI_MULTIPARAM12     MultiParam12;
+	EFI_MULTIPARAM13     MultiParam13;
+	EFI_MULTIPARAM14     MultiParam14;
+	EFI_MULTIPARAM15     MultiParam15;
+	EFI_MAXPARAMS64      MaxParams64;
+	EFI_MAXPARAMSMIXED   MaxParamsMixed;
+	EFI_MAXPARAMSNATURAL MaxParamsNatural;
 } EFI_CUSTOM_PROTOCOL;
 
 static EFI_STATUS common_base(INTN val, UINT64* p)
@@ -211,6 +214,23 @@ EFI_STATUS EFIAPI MaxParamsMixed(UINTN p0, UINT64 p1, UINTN p2, UINT64 p3, UINTN
 	return EFI_SUCCESS;
 }
 
+EFI_STATUS EFIAPI MaxParamsNatural(UINTN p0, UINTN p1, UINTN p2, UINTN p3, UINTN p4,
+	UINTN p5, UINTN p6, UINTN p7, UINTN p8, UINTN p9, UINTN p10, UINTN p11,
+	UINTN p12, UINTN p13, UINTN p14, UINTN p15)
+{
+	INTN i;
+	UINTN v = 0, p[16] = { p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11,
+		p12, p13, p14, p15 };
+	for (i = 0; i < 16; i++) {
+		if (p[i] != v) {
+			Print(L"MaxParamsNatural p%d: Got 0x%X, expected 0x%X\n", i, p[i], v);
+			return EFI_INVALID_PARAMETER;
+		}
+		v += 0x11111111;
+	}
+	return EFI_SUCCESS;
+}
+
 static EFI_CUSTOM_PROTOCOL CustomProtocol = {
 	MultiParam0,
 	MultiParam1,
@@ -230,6 +250,7 @@ static EFI_CUSTOM_PROTOCOL CustomProtocol = {
 	MultiParam15,
 	MaxParams64,
 	MaxParamsMixed,
+	MaxParamsNatural
 };
 
 /* Handle for our custom protocol */

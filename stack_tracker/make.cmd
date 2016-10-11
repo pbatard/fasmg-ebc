@@ -10,7 +10,7 @@ set FIRMWARE_BASENAME=QEMU_EFI
 set RUN_QEMU=
 set SERIAL_LOG=
 set COPY_FW=
-set FILE_LIST=matrix max
+set FILE_LIST=matrix max shutdown
 
 :loop
 if [%1]==[] goto next

@@ -30,6 +30,7 @@ struct EFI_CUSTOM_PROTOCOL
   MultiParam15      VOID_PTR
   MaxParams64       VOID_PTR
   MaxParamsMixed    VOID_PTR
+  MaxParamsNatural  VOID_PTR
 ends
 
 section '.text' code executable readable
