@@ -282,3 +282,5 @@ include 'head.inc'
   JMPcc     Failed
 
 include 'tail.inc'
+
+section '.reloc' fixups data discardable

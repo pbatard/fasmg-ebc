@@ -64,5 +64,6 @@ include 'head.inc'
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     Failed
 
-
 include 'tail.inc'
+
+section '.reloc' fixups data discardable

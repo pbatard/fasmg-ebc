@@ -22,5 +22,3 @@ section '.data' data readable writeable
   HexStr:   du "0x12345678", 0x0D, 0x0A, 0x00
   PassMsg:  du TEST_NAME, " test: PASSED", 0x0D, 0x0A, 0x00
   FailMsg:  du TEST_NAME, " test: FAILED", 0x0D, 0x0A, 0x00
-
-section '.reloc' fixups data discardable
