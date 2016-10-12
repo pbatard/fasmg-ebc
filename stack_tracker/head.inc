@@ -33,9 +33,6 @@ struct EFI_CUSTOM_PROTOCOL
   MaxParamsNatural  VOID_PTR
 ends
 
-; Size of the above, in dwords
-CUSTOM_PROTOCOL_SIZE = 19
-
 section '.text' code executable readable
 
 Print:

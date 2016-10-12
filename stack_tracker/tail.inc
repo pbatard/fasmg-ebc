@@ -17,7 +17,7 @@ section '.data' data readable writeable
   CustomProtocolGuid:
             EFI_GUID { 0x9bb363b1, 0xb588, 0x4e45, {0x88, 0x06, 0x5f, 0x69, 0x56, 0xae, 0xad, 0xb4} }
   CustomProtocolInterface:
-            rq CUSTOM_PROTOCOL_SIZE
+            rb EFI_CUSTOM_PROTOCOL.__size
   Digits:   du "0123456789ABCDEF"
   HexStr:   du "0x12345678", 0x0D, 0x0A, 0x00
   PassMsg:  du TEST_NAME, " test: PASSED", 0x0D, 0x0A, 0x00

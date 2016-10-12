@@ -181,7 +181,7 @@ section '.data' data readable writeable
   CustomProtocolGuid:
             EFI_GUID { 0x1e81aff7, 0x5509, 0x4acc, {0xa9, 0x3f, 0x56, 0x55, 0x0d, 0xb1, 0xbd, 0xcc} }
   CustomProtocolInterface:
-            rq 7
+            rb EFI_CUSTOM_PROTOCOL.__size
   Digits:   du "0123456789ABCDEF"
   ISAMsg:   du "  ISA = ", 0x00
   HexStr:   du "0x12345678", 0x0D, 0x0A, 0x00

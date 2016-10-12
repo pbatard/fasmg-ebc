@@ -43,8 +43,8 @@ macro struct? name
   define name 0
   namespace name
   virtual at 0
-  name.n = 0 ; current number of natural elements
-  name.s = 0 ; current struct size
+  name.__n = 0 ; current number of natural elements
+  name.__size = 0 ; current struct size
 
   struc ? def&
     local n, c, s, i, as_is
@@ -62,8 +62,8 @@ macro struct? name
         if ($ mod 8 <> 0)
           err 'substructure must be aligned to natural word'
         end if
-        s = def.s
-        i = i + def.n
+        s = def.__size
+        i = i + def.__n
       end if
       if (s < 0)
         i = 1
@@ -71,11 +71,11 @@ macro struct? name
       end if
     end match
     if (s = 8) & ((($+3) and (not 3)) <> (($+7) and (not 7)))
-      name.n = name.n + 1 ; alignment correction required
+      name.__n = name.__n + 1 ; alignment correction required
     end if
     align s
-    c = $ - (8 * name.n)
-    n = name.n
+    c = $ - (8 * name.__n)
+    n = name.__n
     assert (n >= 0)
     assert (c >= 0)
     . equ +n,+c
@@ -84,8 +84,8 @@ macro struct? name
     else
       rb s
     end if
-    name.n = name.n + i
-    name.s = $
+    name.__n = name.__n + i
+    name.__size = $
   end struc
 end macro
 
