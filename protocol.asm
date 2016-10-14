@@ -49,7 +49,7 @@ PrintHex32:
   MOV       R1, @R0(0,+16)
   AND       R1, R4
   PUSH      R1
-@1:
+@0:
   MOV       R1, @R0
   EXTNDD    R2, R6(4)
   MUL       R2, R3(-7)
@@ -65,7 +65,7 @@ PrintHex32:
   AND       @R0, R4
   ADD       R3, R6(1)
   CMPIgte   R3, 8
-  JMPcc     @1b
+  JMPcc     @0b
   POP       R1
   MOVREL    R1, HexStr
   PUSH      R1

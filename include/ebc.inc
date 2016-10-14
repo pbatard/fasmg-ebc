@@ -30,18 +30,18 @@ element IP?     : R + 0x801
 ; Supporting macros
 ;
 
-repeat 10
-  macro @#% tail
-    match label, @#%#f?
+repeat 10 i:0
+  macro @#i tail
+    match label, @#i#f?
       label tail
-      @#%#b? equ @#%#f?
+      @#i#b? equ @#i#f?
     end match
     local anonymous
-    @#%#f? equ anonymous
+    @#i#f? equ anonymous
   end macro
 
-  define @#%#f?
-  @#%
+  define @#i#f?
+  @#i
 end repeat
 
 macro di width, val

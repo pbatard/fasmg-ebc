@@ -34,7 +34,7 @@ PrintHex32:
   MOV       R1, @R0(0,+16)
   AND       R1, R4
   PUSH      R1
-@1:
+@0:
   MOV       R1, @R0
   EXTNDD    R2, R6(4)
   MUL       R2, R3(-7)
@@ -50,7 +50,7 @@ PrintHex32:
   AND       @R0, R4
   ADD       R3, R6(1)
   CMPIgte   R3, 8
-  JMPcc     @1b
+  JMPcc     @0b
   POP       R1
   MOVREL    R1, HexStr
   PUSH      R1
@@ -114,13 +114,13 @@ EfiMain:
   ; Expected status is EFI_BUFFER_TOO_SMALL
   MOVI      R2, EFI_BUFFER_TOO_SMALL
   CMPeq     R7, R2
-  JMPcs     @1f
+  JMPcs     @0f
   CMPI32deq R7, EFI_32BIT_ERROR or (EFI_BUFFER_TOO_SMALL and EFI_32BIT_MASK)
-  JMPcs     @1f
+  JMPcs     @0f
   MOVREL    R1, LhMsg
   JMP       CallFailed
 
-@1:
+@0:
   ; Now that we have the size, allocate our buffer
   MOVREL    R2, HandleList
   PUSHn     R2
