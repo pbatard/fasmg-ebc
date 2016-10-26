@@ -47,6 +47,18 @@ entry DriverInstall
 
 section '.text' code executable readable
 
+; Return a 32 or 64-bit status code for the native arch
+ReturnStatus:
+  CMP64gte  R7, R6
+  JMPcs     @0f
+  MOVId     R4, EFI_32BIT_ERROR
+  MOVsnd    R5, R4
+  CMPlte    R5, R6
+  JMPcc     @0f
+  OR32      R7, R4
+@0:
+  RET
+
 Print:
   MOVREL    R1, gST
   MOV       R1, @R1
@@ -58,7 +70,6 @@ Print:
   RET
 
 PrintHex32:
-  XOR       R6, R6
   MOV       R3, R6
   NOT32     R4, R6
   MOVREL    R5, Digits
@@ -98,20 +109,17 @@ CallFailed:
   POP       R1
   CALL      PrintHex32
   POP       R7
-  RET
+  JMP       ReturnStatus
 
 GetDriverName:
-  MOV       R1, @R0(+2,+16)
+  MOVn      R1, @R0(+2,+16)
   MOVREL    @R1, DrvName
   MOVI      R7, EFI_SUCCESS
   RET
 
 BindingSupported:
-  ; TODO: detect if the native arch is 32 or 64 bit and return the right status
-  MOVI      R6, EFI_32BIT_ERROR
   MOVI      R7, EFI_UNSUPPORTED
-  OR        R7, R6
-  RET
+  JMP       ReturnStatus
 
 Hello:
   MOVREL    R1, HelloMsg
@@ -261,7 +269,7 @@ DriverInstall:
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     CallFailed  
 
-  MOV       R7, R6
+  MOVI      R7, EFI_SUCCESS
   RET
 
 section '.data' data readable writeable
