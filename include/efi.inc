@@ -125,7 +125,7 @@ end macro
 ; 'ImageHandle' at (+0,+16) and 'SystemTable' at (+1,+16).
 struct EFI_MAIN_PARAMETERS
   Reserved                     rq 2
-  ImageHandle                  VOID_PTR
+  ImageHandle                  EFI_HANDLE
   SystemTable                  VOID_PTR
 ends
 

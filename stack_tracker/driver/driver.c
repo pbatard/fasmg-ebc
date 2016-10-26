@@ -256,15 +256,14 @@ static EFI_CUSTOM_PROTOCOL CustomProtocol = {
 /* Handle for our custom protocol */
 static EFI_HANDLE CustomProtocolHandle = NULL;
 
-CHAR16 *ShortDriverName = L"custprot";
-CHAR16 *FullDriverName = L"Custom Protocol Driver";
+CHAR16 *CustomDriverName = L"Custom Protocol Driver";
 
 /* Return the driver name */
 static EFI_STATUS EFIAPI
 GetDriverName(EFI_COMPONENT_NAME_PROTOCOL *This,
 	CHAR8 *Language, CHAR16 **DriverName)
 {
-	*DriverName = FullDriverName;
+	*DriverName = CustomDriverName;
 	return EFI_SUCCESS;
 }
 
@@ -272,7 +271,7 @@ static EFI_STATUS EFIAPI
 GetDriverName2(EFI_COMPONENT_NAME2_PROTOCOL *This,
 	CHAR8 *Language, CHAR16 **DriverName)
 {
-	*DriverName = FullDriverName;
+	*DriverName = CustomDriverName;
 	return EFI_SUCCESS;
 }
 
@@ -367,8 +366,7 @@ DriverInstall(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable)
 
 	/* Grab a handle to this image, so that we can add an unload to our driver */
 	Status = BS->OpenProtocol(ImageHandle, &gEfiLoadedImageProtocolGuid,
-		(VOID **)&LoadedImage, ImageHandle,
-		NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+		(VOID **)&LoadedImage, ImageHandle, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
 	if (EFI_ERROR(Status)) {
 		PrintStatusError(L"Could not open loaded image protocol");
 		return Status;

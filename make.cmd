@@ -96,6 +96,17 @@ if not [%RUN_DEBUGGER%]==[] (
     echo fs0: > image\efi\boot\startup.nsh
     echo load driver_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
     echo %FILE%.efi >> image\efi\boot\startup.nsh
+  ) else if [%FILE%]==[driver] (
+    copy %FILE%.efi image\driver_%UEFI_EXT%.efi >NUL
+    echo fs0: > image\efi\boot\startup.nsh
+    if exist "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" (
+      copy "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" image\EbcDebugger_%UEFI_EXT%.efi >NUL
+      if not [%RUN_DEBUGGER%]==[] (
+        echo EbcDebugger_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
+      )
+    )
+    echo load driver_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
+    echo drivers >> image\efi\boot\startup.nsh
   ) else (
     copy %FILE%.efi image\efi\boot\boot%UEFI_EXT%.efi >NUL
   )
