@@ -332,6 +332,7 @@ macro ebc.move_general opcode, ops&
   op1_imm = 0
   op2_imm = 0
   index_size = 16
+  imm_size = 1
   _opcode = opcode and 0xff
 
   match _op1 (val1) =, _op2 (val2), ops
@@ -411,6 +412,13 @@ macro ebc.move_general opcode, ops&
     else
       err 'constant and natural values too large for index encoding'
     end if
+  else if (opcode = 0x125) & (op2_index = 3) & ((op2_imm < -0x8000) | (op2_imm > 0x7FFF))
+    _opcode = _opcode + 1
+  else if (opcode = 0x132) & (op2_index = 3) & (op2_imm > 0xFFFF)
+    _opcode = _opcode + 1
+  end if
+  if (_opcode = 0x26) | (_opcode = 0x33)
+    imm_size = 2
   end if
 
   db op1_index shl 7 + (op2_index and 1) shl 6 + _opcode
@@ -421,7 +429,7 @@ macro ebc.move_general opcode, ops&
   if (op2_index = 1)
     ebc.insert_index index_size, op2_nat, op2_cst
   else if (op2_index = 3)
-    di (opcode - 0x24), op2_imm
+    di imm_size, op2_imm
   end if
 end macro
 
