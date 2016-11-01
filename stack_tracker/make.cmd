@@ -49,12 +49,18 @@ if [%RUN_QEMU%]==[] goto end
 
 if [%QEMU_ARCH%]==[arm] set QEMU_OPTS=%QEMU_OPTS% -M virt -cpu cortex-a15 %QEMU_OPTS%
 
-set QEMU_FIRMWARE=%FIRMWARE_BASENAME%_%UEFI_EXT%.fd
+set UEFI_EXT_UPPERCASE=ARM
+if [%UEFI_EXT%]==[ia32] (
+  set UEFI_EXT_UPPERCASE=IA32
+)
+
+set QEMU_FIRMWARE=%FIRMWARE_BASENAME%_%UEFI_EXT_UPPERCASE%.fd
 set QEMU_EXE=qemu-system-%QEMU_ARCH%w.exe
+set ZIP_FILE=%FIRMWARE_BASENAME%-%UEFI_EXT_UPPERCASE%.zip
 if not [%COPY_FW%]==[] (
   copy "\\debian\src\edk2\Build\ArmVirtQemu-ARM\RELEASE_GCC5\FV\QEMU_EFI.fd" QEMU_EFI_ARM.fd
 ) else if not exist %QEMU_FIRMWARE% (
-  call cscript /nologo "%~dp0\..\download.vbs" %FIRMWARE_BASENAME% %UEFI_EXT%
+  call cscript /nologo "%~dp0\..\download.vbs" http://efi.akeo.ie/%FIRMWARE_BASENAME% %ZIP_FILE% %FIRMWARE_BASENAME%.fd %QEMU_FIRMWARE% "The UEFI firmware file, needed for QEMU,"
   if errorlevel 1 goto end
 )
 

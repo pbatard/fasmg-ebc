@@ -12,11 +12,6 @@ to produce EBC executables..._
 * [QEMU](http://www.qemu.org) __v2.7 or later__
   NB: You can find QEMU Windows binaries [here](https://qemu.weilnetz.de/w64/).  
   Make sure you use QEMU 2.7 or later, as earlier versions may produce a `Synchronous Exception` on AARCH64.
-* UEFI.org's [EBC Debugger](http://www.uefi.org/node/550) for syntax debugging and validation.  
-  Note however that __the EBC Debugger [IS](https://github.com/tianocore/edk/blob/master/Sample/Universal/Ebc/Dxe/EbcDebugger/EdbDisasmSupport.c#L191)
-  [buggy](https://github.com/tianocore/edk/blob/master/Sample/Universal/Ebc/Dxe/EbcDebugger/EdbDisasmSupport.c#L228)
-  when it comes to displaying 32 or 64bit indexes__, so please don't report that fasmg-ebc is not
-  encoding indexes properly, when it's really the debugger that is not decoding them properly.
 * git (e.g. [TortoiseGit](https://tortoisegit.org/) for Windows).
 
 ## Instructions and syntax
@@ -67,5 +62,5 @@ For more, see `efi.inc` and `hello.asm`.
 * If you have QEMU installed, you can add a `qemu` parameter to run the application (e.g. `make hello qemu`)  
   You can also add one of `x64`, `ia32`, `arm` and `aa64` to run the application against a specific UEFI
   architecture (e.g. `make hello qemu aa64`)
-* Also, if you have extracted the EBC Debugger into the root directory, you can add the `debug` parameter
-  to run the assembled executable through the debugger (e.g. `make ebctest debug`)
+* You can also debug the samples with the EBC Debugger by replacing `qemu` with `debug`
+  (e.g. `make arch debug arm`). The EBC Debugger will be automatically downloaded for the required arch.

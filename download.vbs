@@ -1,13 +1,12 @@
 '
-' QEMU firmware download script.
+' Download and unzip script.
 '
 
-FW_NAME = UCase(WScript.Arguments(0))
-FW_ARCH = UCase(WScript.Arguments(1))
-FW_DIR  = "http://efi.akeo.ie/" & FW_NAME & "/"
-FW_ZIP  = FW_NAME & "-" & FW_ARCH & ".zip"
-FW_FILE = FW_NAME & "_" & FW_ARCH & ".fd"
-FW_URL  = FW_DIR & FW_ZIP
+URL_BASE = WScript.Arguments(0)
+ZIP_FILE = WScript.Arguments(1)
+SRC_FILE = WScript.Arguments(2)
+DST_FILE = WScript.Arguments(3)
+MSG_TEXT = WScript.Arguments(4)
 
 ' Globals
 Set fso = CreateObject("Scripting.FileSystemObject")
@@ -54,23 +53,23 @@ Sub Unzip(Archive, File)
   Next
 End Sub
 
-' Fetch the UEFI firmware and unzip it
-If Not fso.FileExists(FW_FILE) Then
-  Call WScript.Echo("The UEFI firmware file, needed for QEMU, " &_
-    "is being downloaded from: " & vbCrLf & FW_URL & vbCrLf &_
+' Fetch the file, unzip it and rename it
+If Not fso.FileExists(DST_FILE) Then
+  Call WScript.Echo(vbCrLf & MSG_TEXT & " is being downloaded from: " &_
+    vbCrLf & URL_BASE & "/" & ZIP_FILE & vbCrLf &_
     "Note: Unless you delete the file, this should only happen once.")
-  Call DownloadHttp(FW_URL, FW_ZIP)
+  Call DownloadHttp(URL_BASE & "/" & ZIP_FILE, ZIP_FILE)
 End If
-If Not fso.FileExists(FW_ZIP) And Not fso.FileExists(FW_FILE) Then
-  Call WScript.Echo("There was a problem downloading the QEMU UEFI firmware.")
+If Not fso.FileExists(ZIP_FILE) And Not fso.FileExists(DST_FILE) Then
+  Call WScript.Echo("There was a problem downloading the file.")
   Call WScript.Quit(1)
 End If
-If fso.FileExists(FW_ZIP) Then
-  Call Unzip(FW_ZIP, FW_NAME & ".fd")
-  Call fso.MoveFile(FW_NAME & ".fd", FW_FILE)
-  Call fso.DeleteFile(FW_ZIP)
+If fso.FileExists(ZIP_FILE) Then
+  Call Unzip(ZIP_FILE, SRC_FILE)
+  Call fso.MoveFile(SRC_FILE, DST_FILE)
+  Call fso.DeleteFile(ZIP_FILE)
 End If
-If Not fso.FileExists(FW_FILE) Then
-  Call WScript.Echo("There was a problem unzipping the QEMU UEFI firmware.")
+If Not fso.FileExists(DST_FILE) Then
+  Call WScript.Echo("There was a problem unzipping the file.")
   Call WScript.Quit(1)
 End If

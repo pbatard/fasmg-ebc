@@ -56,10 +56,20 @@ if not %errorlevel%==0 goto end
 
 if [%RUN_QEMU%]==[] goto end
 
-set QEMU_FIRMWARE=%FIRMWARE_BASENAME%_%UEFI_EXT%.fd
+set UEFI_EXT_UPPERCASE=X64
+if [%UEFI_EXT%]==[ia32] (
+  set UEFI_EXT_UPPERCASE=IA32
+) else if [%UEFI_EXT%]==[arm] (
+  set UEFI_EXT_UPPERCASE=ARM
+) else if [%UEFI_EXT%]==[aa64] (
+  set UEFI_EXT_UPPERCASE=AA64
+)
+
+set QEMU_FIRMWARE=%FIRMWARE_BASENAME%_%UEFI_EXT_UPPERCASE%.fd
 set QEMU_EXE=qemu-system-%QEMU_ARCH%w.exe
+set ZIP_FILE=%FIRMWARE_BASENAME%-%UEFI_EXT_UPPERCASE%.zip
 if not exist %QEMU_FIRMWARE% (
-  call cscript /nologo "%~dp0download.vbs" %FIRMWARE_BASENAME% %UEFI_EXT%
+  call cscript /nologo "%~dp0download.vbs" http://efi.akeo.ie/%FIRMWARE_BASENAME% %ZIP_FILE% %FIRMWARE_BASENAME%.fd %QEMU_FIRMWARE% "The UEFI firmware file, needed for QEMU,"
   if errorlevel 1 goto end
 )
 
@@ -68,7 +78,6 @@ if [%UEFI_EXT%]==[arm] (
   echo Notice: EBC support for ARM is not yet integrated into EDK2
   echo This means that a specially patched UEFI firmware is required
   echo for EBC to work on ARM...
-  echo.
 )
 
 if not exist image\efi\boot mkdir image\efi\boot
@@ -76,11 +85,12 @@ del image\efi\boot\boot*.efi > NUL 2>&1
 del image\efi\boot\startup.nsh > NUL 2>&1
 if not [%RUN_DEBUGGER%]==[] (
   echo fs0: > image\efi\boot\startup.nsh
-  if not exist "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" (
-    echo EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi was not found
-    goto end
+  if not exist "Ebc Debugger\EbcDebugger_%UEFI_EXT%.efi" (
+    if not exist "EBC Debugger" mkdir "EBC Debugger"
+    call cscript /nologo "%~dp0download.vbs" http://efi.akeo.ie/EBC/Debugger EbcDebugger-%UEFI_EXT_UPPERCASE%.zip EbcDebugger.efi "EBC Debugger\EbcDebugger_%UEFI_EXT%.efi" "The EBC Debugger"
+    if errorlevel 1 goto end  
   )
-  copy "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" image\EbcDebugger_%UEFI_EXT%.efi >NUL
+  copy "EBC Debugger\EbcDebugger_%UEFI_EXT%.efi" image\EbcDebugger_%UEFI_EXT%.efi >NUL
   echo load EbcDebugger_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
 )
 if [%FILE%]==[protocol] (
