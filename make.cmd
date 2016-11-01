@@ -14,10 +14,6 @@ set SERIAL_LOG=
 :loop
 if [%1]==[] goto next
 if [%1]==[debug] (
-  if not exist "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" (
-    echo EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi is missing!
-    goto end
-  )
   set RUN_QEMU=1
   set RUN_DEBUGGER=1
 ) else if [%1]==[qemu] (
@@ -80,33 +76,32 @@ del image\efi\boot\boot*.efi > NUL 2>&1
 del image\efi\boot\startup.nsh > NUL 2>&1
 if not [%RUN_DEBUGGER%]==[] (
   echo fs0: > image\efi\boot\startup.nsh
-  echo cd efi\boot\ >> image\efi\boot\startup.nsh
-  copy %FILE%.efi image\efi\boot >NUL
   if not exist "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" (
     echo EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi was not found
     goto end
   )
-  copy "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" image\efi\boot\EbcDebugger_%UEFI_EXT%.efi >NUL
-  echo EbcDebugger_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
+  copy "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" image\EbcDebugger_%UEFI_EXT%.efi >NUL
+  echo load EbcDebugger_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
+)
+if [%FILE%]==[protocol] (
+  copy %FILE%.efi image\%FILE%.efi >NUL
+  copy protocol_driver\driver_%UEFI_EXT%.efi image > NUL
+  if not exist "image\efi\boot\startup.nsh" (
+    echo fs0: > image\efi\boot\startup.nsh
+  )
+  echo load driver_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
   echo %FILE%.efi >> image\efi\boot\startup.nsh
+) else if [%FILE%]==[driver] (
+  copy %FILE%.efi image\driver_%UEFI_EXT%.efi >NUL
+  if not exist "image\efi\boot\startup.nsh" (
+    echo fs0: > image\efi\boot\startup.nsh
+  )
+  echo load driver_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
+  echo drivers >> image\efi\boot\startup.nsh
 ) else (
-  if [%FILE%]==[protocol] (
-    copy %FILE%.efi image\%FILE%.efi >NUL
-    copy protocol_driver\driver_%UEFI_EXT%.efi image > NUL
-    echo fs0: > image\efi\boot\startup.nsh
-    echo load driver_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
+  if exist "image\efi\boot\startup.nsh" (
+    copy %FILE%.efi image >NUL
     echo %FILE%.efi >> image\efi\boot\startup.nsh
-  ) else if [%FILE%]==[driver] (
-    copy %FILE%.efi image\driver_%UEFI_EXT%.efi >NUL
-    echo fs0: > image\efi\boot\startup.nsh
-    if exist "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" (
-      copy "EBC Debugger\EbcDebugger\%UEFI_EXT%\EbcDebugger.efi" image\EbcDebugger_%UEFI_EXT%.efi >NUL
-      if not [%RUN_DEBUGGER%]==[] (
-        echo EbcDebugger_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
-      )
-    )
-    echo load driver_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
-    echo drivers >> image\efi\boot\startup.nsh
   ) else (
     copy %FILE%.efi image\efi\boot\boot%UEFI_EXT%.efi >NUL
   )
