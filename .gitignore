@@ -1,4 +1,5 @@
 *.efi
+!native/*.efi
 !protocol_driver/*.efi
 !stacktracker/driver/*.efi
 *.exe
