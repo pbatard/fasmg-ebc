@@ -210,6 +210,7 @@ DriverInstall:
   MOVn      @R1(EFI_DRIVER_BINDING_PROTOCOL.DriverBindingHandle), @R2
 
   ; Install the interface
+  MOVREL    R1, CustomProtocolInterface
   PUSHn     R1
   PUSHn     R6 ; EFI_NATIVE_INTERFACE = 0
   MOVREL    R1, CustomProtocolGuid

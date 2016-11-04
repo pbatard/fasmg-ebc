@@ -107,7 +107,9 @@ if [%FILE%]==[protocol] (
     echo fs0: > image\efi\boot\startup.nsh
   )
   echo load driver_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
-  echo drivers >> image\efi\boot\startup.nsh
+rem  echo drivers >> image\efi\boot\startup.nsh
+  copy native\native_%UEFI_EXT%.efi image >NUL
+  echo native_%UEFI_EXT%.efi >> image\efi\boot\startup.nsh
 ) else (
   if exist "image\efi\boot\startup.nsh" (
     copy %FILE%.efi image >NUL
