@@ -25,6 +25,22 @@ DriverVersion = 0x10
 
 struct EFI_CUSTOM_PROTOCOL
   Hello                 VOID_PTR
+  MultiParam0           VOID_PTR
+  MultiParam1           VOID_PTR
+  MultiParam2           VOID_PTR
+  MultiParam3           VOID_PTR
+  MultiParam4           VOID_PTR
+  MultiParam5           VOID_PTR
+  MultiParam6           VOID_PTR
+  MultiParam7           VOID_PTR
+  MultiParam8           VOID_PTR
+  MultiParam9           VOID_PTR
+  MultiParam10          VOID_PTR
+  MultiParam11          VOID_PTR
+  MultiParam12          VOID_PTR
+  MultiParam13          VOID_PTR
+  MultiParam14          VOID_PTR
+  MultiParam15          VOID_PTR
 ends
 
 struct EFI_COMPONENT_NAME_PROTOCOL
@@ -73,7 +89,7 @@ PrintHex32:
   MOV       R3, R6
   NOT32     R4, R6
   MOVREL    R5, Digits
-  MOVREL    R7, HexStr
+  MOVREL    R7, HexStr32
   ADD       R7, R6(4)
   MOV       R1, @R0(0,+16)
   AND       R1, R4
@@ -96,7 +112,38 @@ PrintHex32:
   CMPIgte   R3, 8
   JMPcc     @1b
   POP       R1
-  MOVREL    R1, HexStr
+  MOVREL    R1, HexStr32
+  PUSH      R1
+  CALL      Print
+  POP       R1
+  RET
+
+PrintHex64:
+  MOV       R3, R6
+  NOT       R4, R6
+  MOVREL    R5, Digits
+  MOVREL    R7, HexStr64
+  ADD       R7, R6(4)
+  PUSH      @R0(0,+16)
+@0:
+  MOV       R1, @R0
+  EXTNDD    R2, R6(4)
+  MUL       R2, R3(-15)
+  NEG       R2, R2
+  SHR       R1, R2
+  ADD       R1, R1
+  PUSH      R5
+  ADD       R5, R1
+  MOVw      @R7, @R5
+  ADD       R7, R6(2)
+  POP       R5
+  SHR       R4, R6(4)
+  AND       @R0, R4
+  ADD       R3, R6(1)
+  CMPIgte   R3, 16
+  JMPcc     @0b
+  POP       R1
+  MOVREL    R1, HexStr64
   PUSH      R1
   CALL      Print
   POP       R1
@@ -126,6 +173,76 @@ Hello:
   PUSH      R1
   CALL      Print
   POP       R1
+  MOVI      R7, EFI_SUCCESS
+  RET
+
+repeat 16 i:0
+MultiParam#i:
+  MOVI      R5, i
+  JMP       MultiParamCommon
+end repeat
+
+MultiParamCommon:
+  XOR       R6, R6
+  MOVI      R4, 1
+  MOVREL    R3, Values
+  MOV       R2, R0(+0,+16)
+@0:
+  PUSH      R5
+  AND       R5, R4
+  CMPeq     R5, R6
+  POP       R5
+  JMPcc     @1f ; UINTN or UINT64?
+  MOVn      R1, @R3
+  CMP32eq   R1, @R2
+  JMPcs     @3f
+  PUSH      @R2
+  PUSH      R1
+  MOVREL    R1, IPMsg1
+  PUSH      R1
+  CALL      Print
+  POP       R1
+  CALL      PrintHex32
+  POP       R1
+  MOVREL    R1, IPMsg2
+  PUSH      R1
+  CALL      Print
+  POP       R1
+  CALL      PrintHex32
+  POP       R1  
+  MOVI      R7, EFI_INVALID_PARAMETER
+  JMP       ReturnStatus
+@3:
+  MOV       R2, R2(+1,+0)
+  JMP       @2f
+@1:
+  MOVqq     R1, @R3
+  CMP64eq   R1, @R2
+  JMPcs     @3f
+  PUSH      @R2
+  PUSH      R1
+  MOVREL    R1, IPMsg1
+  PUSH      R1
+  CALL      Print
+  POP       R1
+  CALL      PrintHex64
+  POP       R1
+  MOVREL    R1, IPMsg2
+  PUSH      R1
+  CALL      Print
+  POP       R1
+  CALL      PrintHex64
+  POP       R1  
+  MOVI      R7, EFI_INVALID_PARAMETER
+  JMP       ReturnStatus
+@3:
+  MOV       R2, R2(+0,+8)
+@2:
+  ADD       R3, R6(8)
+  SHL       R4, R6(1)
+  CMPIeq    R4, 0x10
+  JMPcc     @0b
+  MOVI      R7, EFI_SUCCESS
   RET
 
 DriverInstall:
@@ -179,6 +296,13 @@ DriverInstall:
   SUB       R2, R7(4)
   MOVn      @R7, R2
   BREAK     5 ; Generate a Thunk to allow native -> EBC call
+repeat 16 i:0
+  MOVREL    R2, MultiParam#i
+  MOV       R7, R1(EFI_CUSTOM_PROTOCOL.MultiParam#i)
+  SUB       R2, R7(4)
+  MOVn      @R7, R2
+  BREAK     5
+end repeat
   ; Fill in the Component Name interfaces
   MOVREL    R1, ComponentName
   MOVREL    R2, GetDriverName
@@ -283,6 +407,8 @@ section '.data' data readable writeable
             dq ?
   BindingSupported_pointer:
             dq ?
+  Values:
+            dq 0x1B1B1B1B1A1A1A1A, 0x2B2B2B2B2A2A2A2A, 0x3B3B3B3B3A3A3A3A, 0x4B4B4B4B4A4A4A4A
   CustomProtocolInterface:
             rb EFI_CUSTOM_PROTOCOL.__size
   ComponentName:
@@ -302,7 +428,8 @@ section '.data' data readable writeable
   CustomProtocolGuid:
             EFI_GUID { 0x230aa93e, 0x3d8a, 0x4bbd, { 0x8d, 0x48, 0x77, 0xd3, 0xed, 0x9c, 0xa7, 0x9b } }
   Digits:   du "0123456789ABCDEF"
-  HexStr:   du "0x12345678", 0x0D, 0x0A, 0x00
+  HexStr32: du "0x12345678", 0x0D, 0x0A, 0x00
+  HexStr64: du "0x1234567812345678", 0x0D, 0x0A, 0x00
   AIMsg:    du "This driver has already been installed", 0x0D, 0x0A, 0x00
   USMsg:    du "Unexpected initial status", 0x0D, 0x0A, 0x00
   OPMsg:    du "Error OpenProtocol: ", 0x00
@@ -312,5 +439,7 @@ section '.data' data readable writeable
   DrvName:  du "EBC Driver v1.0", 0x00
   En:       db "en", 0x00
   Eng:      db "eng", 0x00
+  IPMsg1:   du "Expected: ", 0x00
+  IPMsg2:   du "Received: ", 0x00
   
 section '.reloc' fixups data discardable

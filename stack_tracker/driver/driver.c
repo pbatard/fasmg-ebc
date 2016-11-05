@@ -8,7 +8,7 @@
 typedef INT32 INTN;
 typedef UINT32 UINTN;
 
-#define PrintStatusError(str) Print(str L" [%d] %r", Status & 0x7FFFFFFF)
+#define PrintStatusError(str) Print(str L" [%x] %r\n", Status & 0x7FFFFFFF, Status)
 
 /* Custom protocol definition */
 EFI_GUID CustomProtocolGUID = { 0x9bb363b1, 0xb588, 0x4e45, {0x88, 0x06, 0x5f, 0x69, 0x56, 0xae, 0xad, 0xb4} };
