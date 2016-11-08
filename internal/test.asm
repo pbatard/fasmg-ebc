@@ -11,17 +11,11 @@ entry EfiMain
 
 section '.text' code executable readable
 EfiMain:
-  MOV R1, @R1(EFI_SYSTEM_TABLE.Hdr)
-  MOV R1, @R1(EFI_SYSTEM_TABLE.FirmwareVendor)
-  MOV R1, @R1(EFI_TABLE_HEADER.Reserved)
-  MOV R1, @R1(EFI_SYSTEM_TABLE.ConsoleInHandle)
-  MOV R1, @R1(EFI_SYSTEM_TABLE.ConOut)
-  BREAK 3
-  ; And thank you, intel BUGGY EBC Debugger, for making me believe
-  ; we had an issue with CALL[EX] computed indexes... >_<
-  CALLEX @R1(EFI_SYSTEM_TABLE.ConOut)
-  CALLEX @R1(SIMPLE_TEXT_INPUT_INTERFACE.Reset)
+  MOVI  R6, EFIAPI(INT64, INT32, CHAR8*, UINT64, INT32)
+  MOVsn @R0(+1,+8), R1(12345678)
 
 section '.data' data readable writeable
+
+  Test: EFIAPI(UINT64, VOID*, INT64, INT32)
 
 section '.reloc' fixups data discardable

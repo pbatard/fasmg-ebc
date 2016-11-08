@@ -26,6 +26,8 @@ end repeat
 element FLAGS?  : R + 0x800
 element IP?     : R + 0x801
 
+EBC_CALL_SIGNATURE = 0xEBCC000000000000
+
 ;
 ; Supporting macros
 ;
@@ -108,6 +110,25 @@ macro ebc.parse_register reg_num, ret, reg
   reg_num = (reg_num and 0x07)
 end macro
 
+macro ebc.parse_call_signature ret, ops&
+  ret = ret shl 1
+  match a =, b, ops
+    match =INT64?, a
+      ret = ret or 1
+    else match =UINT64?, a
+      ret = ret or 1
+    end match
+    ebc.parse_call_signature ret, b
+  else
+    match =INT64?, a
+      ret = ret or 1
+    else match =UINT64?, a
+      ret = ret or 1
+    end match
+    ret = ret or EBC_CALL_SIGNATURE
+  end match
+end macro
+
 macro ebc.get_index_size index_size, nat, cst
   local abs_cst, abs_nat, used_bits, max_n, nbits
   abs abs_cst, cst
@@ -184,7 +205,7 @@ macro ebc.parse_parenthesis index, nat, cst, imm, ops&
 end macro
 
 macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
-  local op1, op2, op1_reg_num, op1_indirect, op1_index, op2_index, index_size, op1_imm
+  local op1, op2, op1_reg_num, op1_indirect, op1_index, op2_index, index_size, op1_imm, val
   local op2_imm, op1_nat, op2_nat, op1_cst, op2_cst, opcode, ins_width, _op2_width, op2_rel
   if (mov_width >= 0)
     opcode = 0x37 ; MOVI
@@ -201,6 +222,7 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
   op1_nat = 0
   op1_cst = 0
   op2_rel = 0
+  op2 = 0
 
   match _op1 (val1) =, (val2), ops
     if (mov_width <> -1)
@@ -221,7 +243,11 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
     if (op1_index <> 1)
       err 'syntax error'
     end if
-    op2 = _op2
+    match EFIAPI? ( params ), _op2
+      ebc.parse_call_signature op2, params
+    else
+      op2 = _op2
+    end match
   else match _op1 =, (val2), ops
     if (mov_width <> -1)
       err 'syntax error'
@@ -233,7 +259,11 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
     end if
   else match _op1 =, _op2, ops
     define op1 _op1
-    op2 = _op2
+    match EFIAPI? ( params ), _op2
+      ebc.parse_call_signature op2, params
+    else
+      op2 = _op2
+    end match
   else
     err 'syntax error'
   end match
@@ -407,6 +437,9 @@ macro ebc.move_general opcode, ops&
       _opcode = _opcode + 4 ; switch _opcode to the 'd' version
     else if (index_size = 32) & ((opcode = 0x132) | (opcode = 0x125))
       _opcode = _opcode + 1 ; switch _opcode to the 'd' version
+    else if (opcode = 0x125) & (op2_index = 3) & ((op2_imm < -0x8000) | (op2_imm > 0x7FFF))
+      _opcode = _opcode + 1
+      index_size = 32
     else if (index_size = 16) & (((opcode >= 0x11D) & (opcode <= 0x120)) | (opcode = 0x132) | (opcode = 0x125))
       ; nothing to do - _opcode is already set for 'w' version
     else

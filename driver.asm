@@ -209,7 +209,7 @@ MultiParamCommon:
   CALL      Print
   POP       R1
   CALL      PrintHex32
-  POP       R1  
+  POP       R1
   MOVI      R7, EFI_INVALID_PARAMETER
   JMP       ReturnStatus
 @3:
@@ -232,7 +232,7 @@ MultiParamCommon:
   CALL      Print
   POP       R1
   CALL      PrintHex64
-  POP       R1  
+  POP       R1
   MOVI      R7, EFI_INVALID_PARAMETER
   JMP       ReturnStatus
 @3:
@@ -295,12 +295,15 @@ DriverInstall:
   MOV       R7, R1(EFI_CUSTOM_PROTOCOL.Hello)
   SUB       R2, R7(4)
   MOVn      @R7, R2
+  ; Set the function call signature in R6
+  MOVI      R6, EFIAPI(VOID)
   BREAK     5 ; Generate a Thunk to allow native -> EBC call
 repeat 16 i:0
   MOVREL    R2, MultiParam#i
   MOV       R7, R1(EFI_CUSTOM_PROTOCOL.MultiParam#i)
   SUB       R2, R7(4)
   MOVn      @R7, R2
+  MOVI      R6, EBC_CALL_SIGNATURE or i
   BREAK     5
 end repeat
   ; Fill in the Component Name interfaces
@@ -309,7 +312,9 @@ end repeat
   MOV       R7, R1(EFI_COMPONENT_NAME_PROTOCOL.GetDriverName)
   SUB       R2, R7(4)
   MOVn      @R7, R2
+  MOVI      R6, EFIAPI(VOID*, CHAR8*, CHAR16*)
   BREAK     5
+  XOR       R6, R6
   MOVn      @R1(EFI_COMPONENT_NAME_PROTOCOL.GetControllerName), R6
   MOVREL    R3, Eng
   MOVn      @R1(EFI_COMPONENT_NAME_PROTOCOL.SupportedLanguages), R3
@@ -324,7 +329,9 @@ end repeat
   MOV       R7, R1(EFI_DRIVER_BINDING_PROTOCOL.Supported)
   SUB       R2, R7(4)
   MOVn      @R7, R2
+  MOVI      R6, EFIAPI(VOID*, VOID*, VOID*)
   BREAK     5
+  XOR       R6, R6
   MOVn      @R1(EFI_DRIVER_BINDING_PROTOCOL.Start), R6
   MOVn      @R1(EFI_DRIVER_BINDING_PROTOCOL.Stop), R6
   MOVI      R2, DriverVersion
@@ -349,7 +356,7 @@ end repeat
   MOVREL    R1, IPIMsg
   CMPI32eq  R7, EFI_SUCCESS
   JMPcc     CallFailed
-  
+
   ; Grab a handle to this image, so that we can add an unload to our driver
   MOVI      R1, EFI_OPEN_PROTOCOL_GET_PROTOCOL
   PUSHn     R1
@@ -392,7 +399,7 @@ end repeat
   MOV       R0, R0(+8,+0)
   MOVREL    R1, IMPIMsg
   CMPI32eq  R7, EFI_SUCCESS
-  JMPcc     CallFailed  
+  JMPcc     CallFailed
 
   MOVI      R7, EFI_SUCCESS
   RET
@@ -441,5 +448,5 @@ section '.data' data readable writeable
   Eng:      db "eng", 0x00
   IPMsg1:   du "Expected: ", 0x00
   IPMsg2:   du "Received: ", 0x00
-  
+
 section '.reloc' fixups data discardable

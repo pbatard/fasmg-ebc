@@ -111,7 +111,19 @@ macro EFI_GUID? data&
     db d4_8
   else
     err 'invalid GUID syntax'
-  end match 
+  end match
+end macro
+
+; Enables the declaration of a call signature in the data section, for use with BREAK 5
+macro EFIAPI? data&
+  local val
+  val = 0
+  match ( params ), data
+    ebc.parse_call_signature val, params
+  else
+    err 'invalid EFIAPI syntax'
+  end match
+  dq val
 end macro
 
 ; Data definitions, from UEFI specs
