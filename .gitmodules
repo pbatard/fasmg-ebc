@@ -1,9 +1,3 @@
-[submodule "stacktracker/driver/gnu-efi"]
-	path = stack_tracker/driver/gnu-efi
-	url = git://git.code.sf.net/p/gnu-efi/code
-[submodule "protocol_driver/gnu-efi"]
-	path = protocol_driver/gnu-efi
-	url = git://git.code.sf.net/p/gnu-efi/code
-[submodule "native/gnu-efi"]
-	path = native/gnu-efi
+[submodule "gnu-efi"]
+	path = gnu-efi
 	url = git://git.code.sf.net/p/gnu-efi/code

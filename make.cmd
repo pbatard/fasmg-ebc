@@ -84,6 +84,7 @@ if not exist image\efi\boot mkdir image\efi\boot
 del image\efi\boot\boot*.efi > NUL 2>&1
 del image\efi\boot\startup.nsh > NUL 2>&1
 if not [%RUN_DEBUGGER%]==[] (
+rem   copy "\\debian\src\edk2\Build\MdeModule\RELEASE_GCC5\%UEFI_EXT_UPPERCASE%\EbcDebugger.efi" "EBC Debugger\EbcDebugger_%UEFI_EXT%.efi"
   echo fs0: > image\efi\boot\startup.nsh
   if not exist "Ebc Debugger\EbcDebugger_%UEFI_EXT%.efi" (
     if not exist "EBC Debugger" mkdir "EBC Debugger"
