@@ -120,9 +120,9 @@ macro ebc.parse_call_signature ret, ops&
     end match
     ebc.parse_call_signature ret, b
   else
-    match =INT64?, a
+    match =INT64?, ops
       ret = ret or 1
-    else match =UINT64?, a
+    else match =UINT64?, ops
       ret = ret or 1
     end match
     ret = ret or EBC_CALL_SIGNATURE
@@ -243,7 +243,7 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
     if (op1_index <> 1)
       err 'syntax error'
     end if
-    match EFIAPI? ( params ), _op2
+    match =EFIAPI? ( params ), _op2
       ebc.parse_call_signature op2, params
     else
       op2 = _op2
@@ -259,7 +259,7 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
     end if
   else match _op1 =, _op2, ops
     define op1 _op1
-    match EFIAPI? ( params ), _op2
+    match =EFIAPI? ( params ), _op2
       ebc.parse_call_signature op2, params
     else
       op2 = _op2
