@@ -23,17 +23,27 @@ Print:
   MOV       R0, R0(+2,0)
   RET
 
-PrintHex:
-  XOR       R6, R6
+PrintHex64:
   MOV       R3, R6
   NOT       R4, R6
-  MOVREL    R5, Digits
-  MOVREL    R7, HexStr
+  MOVREL    R7, HexStr64
+  PUSH      R7
+  MOV       R1, @R0(0,+24)
+  JMP       PrintHexCommon
+PrintHex32:
+  MOVI      R3, 8
+  NOT32     R4, R6
+  MOVREL    R7, HexStr32
+  PUSH      R7
+  MOV       R1, @R0(0,+24)
+  AND       R1, R4
+PrintHexCommon:
+  PUSH      R1
   ADD       R7, R6(4)
-  PUSH      @R0(0,+16)
+  MOVREL    R5, Digits
 @0:
   MOV       R1, @R0
-  EXTNDD    R2, R6(4)
+  MOVI      R2, 4
   MUL       R2, R3(-15)
   NEG       R2, R2
   SHR       R1, R2
@@ -49,8 +59,7 @@ PrintHex:
   CMPIgte   R3, 16
   JMPcc     @0b
   POP       R1
-  MOVREL    R1, HexStr
-  PUSH      R1
+  ; HexStr32 or HexStr64 is on top of stack
   CALL      Print
   POP       R1
   RET
@@ -83,21 +92,21 @@ WaitForKeyAndShutdown:
   CALLEX    @R3(EFI_BOOT_SERVICES.WaitForEvent)
   MOV       R0, R0(+3,0)
 
-  MOVREL    R6, gST
-  MOV       R6, @R6
-  MOVn      R6, @R6(EFI_SYSTEM_TABLE.RuntimeServices)
+  MOVREL    R3, gST
+  MOV       R3, @R3
+  MOVn      R3, @R3(EFI_SYSTEM_TABLE.RuntimeServices)
   MOVI      R1, EfiResetShutdown
   MOVI      R2, EFI_SUCCESS
-  MOVI      R3, 0
-  PUSHn     R3
-  PUSHn     R3
+  PUSHn     R6
+  PUSHn     R6
   PUSHn     R2
   PUSHn     R1
-  CALLEX    @R6(EFI_RUNTIME_SERVICES.ResetSystem)
+  CALLEX    @R3(EFI_RUNTIME_SERVICES.ResetSystem)
   MOV       R0, R0(+4,0)
   RET
 
 EfiMain:
+  XOR       R6, R6
   MOVREL    R1, gST
   MOVn      @R1, @R0(EFI_MAIN_PARAMETERS.SystemTable)
 
@@ -108,7 +117,7 @@ EfiMain:
 
   MOVREL    R1, EfiMain
   PUSH      R1
-  CALL      PrintHex
+  CALL      PrintHex64
   POP       R1
  
   JMP       WaitForKeyAndShutdown
@@ -117,8 +126,8 @@ section '.data' data readable writeable
   gST:      dq ?
   Event:    dq ?
   Digits:   du "0123456789ABCDEF"
-  HexStr:   du "0x1234567812345678", 0x0D, 0x0A
-            du 0x00
+  HexStr32: du "0x12345678", 0x0D, 0x0A, 0x00
+  HexStr64: du "0x1234567812345678", 0x0D, 0x0A, 0x00
   EpMsg:    du "Entry point: ", 0x00
   ExitMsg:  du "Press any key to exit", 0x0D, 0x0A, 0x00
 

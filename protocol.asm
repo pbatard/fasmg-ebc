@@ -39,20 +39,28 @@ Print:
   MOV       R0, R0(+2,0)
   RET
 
-PrintHex32:
-  XOR       R6, R6
+PrintHex64:
   MOV       R3, R6
+  NOT       R4, R6
+  MOVREL    R7, HexStr64
+  PUSH      R7
+  MOV       R1, @R0(0,+24)
+  JMP       PrintHexCommon
+PrintHex32:
+  MOVI      R3, 8
   NOT32     R4, R6
-  MOVREL    R5, Digits
-  MOVREL    R7, HexStr
-  ADD       R7, R6(4)
-  MOV       R1, @R0(0,+16)
+  MOVREL    R7, HexStr32
+  PUSH      R7
+  MOV       R1, @R0(0,+24)
   AND       R1, R4
+PrintHexCommon:
   PUSH      R1
+  ADD       R7, R6(4)
+  MOVREL    R5, Digits
 @0:
   MOV       R1, @R0
-  EXTNDD    R2, R6(4)
-  MUL       R2, R3(-7)
+  MOVI      R2, 4
+  MUL       R2, R3(-15)
   NEG       R2, R2
   SHR       R1, R2
   ADD       R1, R1
@@ -61,14 +69,12 @@ PrintHex32:
   MOVw      @R7, @R5
   ADD       R7, R6(2)
   POP       R5
-  SHR32     R4, R6(4)
+  SHR       R4, R6(4)
   AND       @R0, R4
   ADD       R3, R6(1)
-  CMPIgte   R3, 8
+  CMPIgte   R3, 16
   JMPcc     @0b
   POP       R1
-  MOVREL    R1, HexStr
-  PUSH      R1
   CALL      Print
   POP       R1
   RET
@@ -79,7 +85,7 @@ LocateProtocolFailed:
   PUSH      R1
   CALL      Print
   POP       R1
-  CALL      PrintHex32
+  CALL      PrintHex64
   POP       R7
   RET
 
@@ -184,7 +190,8 @@ section '.data' data readable writeable
             rb EFI_CUSTOM_PROTOCOL.__size
   Digits:   du "0123456789ABCDEF"
   ISAMsg:   du "  ISA = ", 0x00
-  HexStr:   du "0x12345678", 0x0D, 0x0A, 0x00
+  HexStr32: du "0x12345678", 0x0D, 0x0A, 0x00
+  HexStr64: du "0x1234567812345678", 0x0D, 0x0A, 0x00
   LPMsg:    du "LocateProtocol: ", 0x00
 
 section '.reloc' fixups data discardable
