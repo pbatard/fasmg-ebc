@@ -117,7 +117,6 @@ end macro
 ; Enables the declaration of a call signature in the data section, for use with BREAK 5
 macro EFIAPI? data&
   local val
-  val = 0
   match ( params ), data
     ebc.parse_call_signature val, params
   else

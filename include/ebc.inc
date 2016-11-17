@@ -110,23 +110,24 @@ macro ebc.parse_register reg_num, ret, reg
   reg_num = (reg_num and 0x07)
 end macro
 
-macro ebc.parse_call_signature ret, ops&
-  ret = ret shl 1
+macro ebc.parse_call_signature_recursive ret, ops&
   match a =, b, ops
-    match =INT64?, a
-      ret = ret or 1
-    else match =UINT64?, a
-      ret = ret or 1
-    end match
-    ebc.parse_call_signature ret, b
+    ebc.parse_call_signature_recursive ret, b
+    ret = ret shl 1
+    ebc.parse_call_signature_recursive ret, a
   else
     match =INT64?, ops
       ret = ret or 1
     else match =UINT64?, ops
       ret = ret or 1
     end match
-    ret = ret or EBC_CALL_SIGNATURE
   end match
+end macro
+
+macro ebc.parse_call_signature ret, ops&
+  ret = 0
+  ebc.parse_call_signature_recursive ret, ops
+  ret = ret or EBC_CALL_SIGNATURE
 end macro
 
 macro ebc.get_index_size index_size, nat, cst
@@ -222,7 +223,6 @@ macro ebc.move_imm_ind_rel mov_width, op2_width, ops&
   op1_nat = 0
   op1_cst = 0
   op2_rel = 0
-  op2 = 0
 
   match _op1 (val1) =, (val2), ops
     if (mov_width <> -1)
