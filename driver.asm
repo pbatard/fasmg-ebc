@@ -41,6 +41,8 @@ struct EFI_CUSTOM_PROTOCOL
   MultiParam13          VOID_PTR
   MultiParam14          VOID_PTR
   MultiParam15          VOID_PTR
+  MaxParams64           VOID_PTR
+  MaxParamsMixed        VOID_PTR
 ends
 
 struct EFI_COMPONENT_NAME_PROTOCOL
@@ -86,18 +88,20 @@ Print:
   RET
 
 PrintHex64:
+  PUSH      R4
   MOV       R3, R6
   NOT       R4, R6
   MOVREL    R7, HexStr64
   PUSH      R7
-  MOV       R1, @R0(0,+24)
+  MOV       R1, @R0(0,+32)
   JMP       PrintHexCommon
 PrintHex32:
+  PUSH      R4
   MOVI      R3, 8
   NOT32     R4, R6
   MOVREL    R7, HexStr32
   PUSH      R7
-  MOV       R1, @R0(0,+24)
+  MOV       R1, @R0(0,+32)
   AND       R1, R4
 PrintHexCommon:
   PUSH      R1
@@ -121,8 +125,10 @@ PrintHexCommon:
   CMPIgte   R3, 16
   JMPcc     @0b
   POP       R1
+  ; HexStr32 or HexStr64 is on top of stack
   CALL      Print
   POP       R1
+  POP       R4
   RET
 
 CallFailed:
@@ -152,6 +158,27 @@ Hello:
   MOVI      R7, EFI_SUCCESS
   RET
 
+InvalidParam32:
+  MOVREL    R4, PrintHex32
+  JMP       InvalidParamCommon
+InvalidParam64:
+  MOVREL    R4, PrintHex64
+InvalidParamCommon:
+  MOVREL    R1, IPMsg1
+  PUSH      R1
+  CALL      Print
+  POP       R1
+  CALL      R4
+  POP       R1
+  MOVREL    R1, IPMsg2
+  PUSH      R1
+  CALL      Print
+  POP       R1
+  CALL      R4
+  POP       R1
+  MOVI      R7, EFI_INVALID_PARAMETER
+  JMP       ReturnStatus
+
 repeat 16 i:0
 MultiParam#i:
   MOVI      R5, i
@@ -174,20 +201,7 @@ MultiParamCommon:
   JMPcs     @3f
   PUSH      @R2
   PUSH      R1
-  MOVREL    R1, IPMsg1
-  PUSH      R1
-  CALL      Print
-  POP       R1
-  CALL      PrintHex32
-  POP       R1
-  MOVREL    R1, IPMsg2
-  PUSH      R1
-  CALL      Print
-  POP       R1
-  CALL      PrintHex32
-  POP       R1
-  MOVI      R7, EFI_INVALID_PARAMETER
-  JMP       ReturnStatus
+  JMP       InvalidParam32
 @3:
   MOV       R2, R2(+1,+0)
   JMP       @2f
@@ -197,20 +211,7 @@ MultiParamCommon:
   JMPcs     @3f
   PUSH      @R2
   PUSH      R1
-  MOVREL    R1, IPMsg1
-  PUSH      R1
-  CALL      Print
-  POP       R1
-  CALL      PrintHex64
-  POP       R1
-  MOVREL    R1, IPMsg2
-  PUSH      R1
-  CALL      Print
-  POP       R1
-  CALL      PrintHex64
-  POP       R1
-  MOVI      R7, EFI_INVALID_PARAMETER
-  JMP       ReturnStatus
+  JMP       InvalidParam64
 @3:
   MOV       R2, R2(+0,+8)
 @2:
@@ -218,6 +219,55 @@ MultiParamCommon:
   SHL       R4, R6(1)
   CMPIeq    R4, 0x10
   JMPcc     @0b
+  MOVI      R7, EFI_SUCCESS
+  RET
+
+MaxParams64:
+  MOVI      R1, 0x0B0B0B0B0A0A0A0A
+  MOVI      R2, 0x1010101010101010
+  MOV       R4, R6
+  MOV       R5, R0(+0,+16)
+@0:
+  CMP64eq   R1, @R5
+  JMPcs     @1f
+  PUSH      @R5
+  PUSH      R1
+  JMP       InvalidParam64
+@1:
+  MOV       R5, R5(+0,+8)
+  ADD64     R1, R2
+  ADD       R4, R6(1)
+  CMPlte    R4, R6(15)
+  JMPcs     @0b
+  MOVI      R7, EFI_SUCCESS
+  RET
+
+MaxParamsMixed:
+  MOVI      R1, 0x0A0A0A0A
+  MOVI      R2, 0x1B1B1B1B1A1A1A1A
+  MOVI      R3, 0x2020202020202020
+  MOV       R4, R6
+  MOV       R5, R0(+0,+16)
+@0:
+  CMP32eq   R1, @R5
+  JMPcs     @1f
+  PUSH      @R5
+  PUSH      R1
+  JMP       InvalidParam32
+@1:
+  MOV       R5, R5(+1,+0)
+  ADD32     R1, R3
+  CMP64eq   R2, @R5
+  JMPcs     @1f
+  PUSH      @R5
+  PUSH      R2
+  JMP       InvalidParam64
+@1:
+  MOV       R5, R5(+0,+8)
+  ADD64     R2, R3
+  ADD       R4, R6(1)
+  CMPlte    R4, R6(7)
+  JMPcs     @0b
   MOVI      R7, EFI_SUCCESS
   RET
 
@@ -282,6 +332,18 @@ repeat 16 i:0
   MOVI      R6, EBC_CALL_SIGNATURE or i
   BREAK     5
 end repeat
+  MOVREL    R2, MaxParams64
+  MOV       R7, R1(EFI_CUSTOM_PROTOCOL.MaxParams64)
+  SUB       R2, R7(4)
+  MOVn      @R7, R2
+  MOVI      R6, EFIAPI(UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64)
+  BREAK     5
+  MOVREL    R2, MaxParamsMixed
+  MOV       R7, R1(EFI_CUSTOM_PROTOCOL.MaxParamsMixed)
+  SUB       R2, R7(4)
+  MOVn      @R7, R2
+  MOVI      R6, EFIAPI(UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64)
+  BREAK     5
   ; Fill in the Component Name interfaces
   MOVREL    R1, ComponentName
   MOVREL    R2, GetDriverName

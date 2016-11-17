@@ -66,7 +66,7 @@ else ifeq ($(ARCH),aa64)
 endif
 OVMF_ARCH       = $(shell echo $(ARCH) | tr a-z A-Z)
 OVMF_ZIP        = OVMF-$(OVMF_ARCH).zip
-GNUEFI_DIR      = $(CURDIR)/gnu-efi
+GNUEFI_DIR      = $(CURDIR)/../gnu-efi
 GNUEFI_LIBS     = lib
 
 # If the compiler produces an elf binary, we need to fiddle with a PE crt0
