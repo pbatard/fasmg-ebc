@@ -26,7 +26,7 @@ end repeat
 element FLAGS?  : R + 0x800
 element IP?     : R + 0x801
 
-EBC_CALL_SIGNATURE = 0xEBCC000000000000
+EBC_CALL_SIGNATURE = 0x2EBC0000
 
 ;
 ; Supporting macros
@@ -791,6 +791,18 @@ macro ebc.load_store_sp opcode, ops&
 
   db opcode
   db op2_reg_num shl 4 + op1_reg_num
+end macro
+
+; Enables the declaration of a call signature in the data section, for use with BREAK 5
+macro EFIAPI? data&
+  local val
+  match function ( params ), data
+    dd function - $ - 4
+    ebc.parse_call_signature val, params
+    dd val
+  else
+    err 'invalid EFIAPI syntax'
+  end match
 end macro
 
 ;

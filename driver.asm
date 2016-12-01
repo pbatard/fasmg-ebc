@@ -21,7 +21,7 @@ include 'efi.inc'
 include 'format.inc'
 include 'utf8.inc'
 
-DriverVersion = 0x10
+DriverVersion = 0x11
 
 struct EFI_CUSTOM_PROTOCOL
   Hello                 VOID_PTR
@@ -317,42 +317,26 @@ DriverInstall:
 @0:
   ; Fill in the Custom Protocol interface
   MOVREL    R1, CustomProtocolInterface
-  MOVREL    R2, Hello
-  MOV       R7, R1(EFI_CUSTOM_PROTOCOL.Hello)
-  SUB       R2, R7(4)
-  MOVn      @R7, R2
-  ; Set the function call signature in R6
-  MOVI      R6, EFIAPI(VOID)
+  MOVREL    R7, HelloPtr
   BREAK     5 ; Generate a Thunk to allow native -> EBC call
+  MOVn      @R1(EFI_CUSTOM_PROTOCOL.Hello), @R7
 repeat 16 i:0
-  MOVREL    R2, MultiParam#i
-  MOV       R7, R1(EFI_CUSTOM_PROTOCOL.MultiParam#i)
-  SUB       R2, R7(4)
-  MOVn      @R7, R2
-  MOVI      R6, EBC_CALL_SIGNATURE or i
+  MOVREL    R7, MultiParam#i#Ptr
   BREAK     5
+  MOVn      @R1(EFI_CUSTOM_PROTOCOL.MultiParam#i), @R7
 end repeat
-  MOVREL    R2, MaxParams64
-  MOV       R7, R1(EFI_CUSTOM_PROTOCOL.MaxParams64)
-  SUB       R2, R7(4)
-  MOVn      @R7, R2
-  MOVI      R6, EFIAPI(UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64)
+  MOVREL    R7, MaxParamsMixedPtr
   BREAK     5
-  MOVREL    R2, MaxParamsMixed
-  MOV       R7, R1(EFI_CUSTOM_PROTOCOL.MaxParamsMixed)
-  SUB       R2, R7(4)
-  MOVn      @R7, R2
-  MOVI      R6, EFIAPI(UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64)
+  MOVn      @R1(EFI_CUSTOM_PROTOCOL.MaxParamsMixed), @R7
+  MOVREL    R7, MaxParams64Ptr
   BREAK     5
+  MOVn      @R1(EFI_CUSTOM_PROTOCOL.MaxParams64), @R7
+
   ; Fill in the Component Name interfaces
   MOVREL    R1, ComponentName
-  MOVREL    R2, GetDriverName
-  MOV       R7, R1(EFI_COMPONENT_NAME_PROTOCOL.GetDriverName)
-  SUB       R2, R7(4)
-  MOVn      @R7, R2
-  MOVI      R6, EFIAPI(VOID*, CHAR8*, CHAR16*)
+  MOVREL    R7, GetDriverNamePtr
   BREAK     5
-  XOR       R6, R6
+  MOVn      @R1(EFI_COMPONENT_NAME_PROTOCOL.GetDriverName), @R7
   MOVn      @R1(EFI_COMPONENT_NAME_PROTOCOL.GetControllerName), R6
   MOVREL    R3, Eng
   MOVn      @R1(EFI_COMPONENT_NAME_PROTOCOL.SupportedLanguages), R3
@@ -361,15 +345,12 @@ end repeat
   MOVn      @R1(EFI_COMPONENT_NAME_PROTOCOL.GetControllerName), R6
   MOVREL    R3, En
   MOVn      @R1(EFI_COMPONENT_NAME_PROTOCOL.SupportedLanguages), R3
+
   ; Fill in DriverBinding
   MOVREL    R1, DriverBinding
-  MOVREL    R2, BindingSupported
-  MOV       R7, R1(EFI_DRIVER_BINDING_PROTOCOL.Supported)
-  SUB       R2, R7(4)
-  MOVn      @R7, R2
-  MOVI      R6, EFIAPI(VOID*, VOID*, VOID*)
+  MOVREL    R7, BindingSupportedPtr
   BREAK     5
-  XOR       R6, R6
+  MOVn      @R1(EFI_DRIVER_BINDING_PROTOCOL.Supported), @R7
   MOVn      @R1(EFI_DRIVER_BINDING_PROTOCOL.Start), R6
   MOVn      @R1(EFI_DRIVER_BINDING_PROTOCOL.Stop), R6
   MOVI      R2, DriverVersion
@@ -450,8 +431,21 @@ section '.data' data readable writeable
             dq ?
   ImageHandle:
             dq ?
-  BindingSupported_pointer:
-            dq ?
+  BindingSupportedPtr:
+            EFIAPI BindingSupported(VOID*, VOID*, VOID*)
+  GetDriverNamePtr:
+            EFIAPI GetDriverName(VOID*, CHAR8*, CHAR16*)
+  HelloPtr:
+            EFIAPI Hello(VOID)
+repeat 16 i:0
+  MultiParam#i#Ptr:
+            dd MultiParam#i - $ - 4
+            dd EBC_CALL_SIGNATURE or i
+end repeat
+  MaxParams64Ptr:
+            EFIAPI MaxParams64(UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64)
+  MaxParamsMixedPtr:
+            EFIAPI MaxParamsMixed(UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64)
   Values:
             dq 0x1B1B1B1B1A1A1A1A, 0x2B2B2B2B2A2A2A2A, 0x3B3B3B3B3A3A3A3A, 0x4B4B4B4B4A4A4A4A
   CustomProtocolInterface:
