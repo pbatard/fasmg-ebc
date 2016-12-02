@@ -127,7 +127,7 @@ end macro
 macro ebc.parse_call_signature ret, ops&
   ret = 0
   ebc.parse_call_signature_recursive ret, ops
-  ret = ret or EBC_CALL_SIGNATURE
+  ret = EBC_CALL_SIGNATURE or (ret and 0xFFFF)
 end macro
 
 macro ebc.get_index_size index_size, nat, cst
@@ -802,6 +802,21 @@ macro EFIAPI? data&
     dd val
   else
     err 'invalid EFIAPI syntax'
+  end match
+end macro
+
+; Macro that should be used in a data section, with a C like function declaration, to
+; register a native -> EBC call, as well as in the code section during program init (but
+; only with the function name this time) to create its thunk. See driver.asm for usage.
+macro EXPORT? data&
+  match function ( params ), data
+    _#function:
+      EFIAPI data
+  else match function, data
+    MOVREL R7, _#function
+    BREAK  5
+  else
+    err 'invalid EXPORT syntax'
   end match
 end macro
 

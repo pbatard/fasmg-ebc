@@ -25,22 +25,9 @@ DriverVersion = 0x11
 
 struct EFI_CUSTOM_PROTOCOL
   Hello                 VOID_PTR
-  MultiParam0           VOID_PTR
-  MultiParam1           VOID_PTR
-  MultiParam2           VOID_PTR
-  MultiParam3           VOID_PTR
-  MultiParam4           VOID_PTR
-  MultiParam5           VOID_PTR
-  MultiParam6           VOID_PTR
-  MultiParam7           VOID_PTR
-  MultiParam8           VOID_PTR
-  MultiParam9           VOID_PTR
-  MultiParam10          VOID_PTR
-  MultiParam11          VOID_PTR
-  MultiParam12          VOID_PTR
-  MultiParam13          VOID_PTR
-  MultiParam14          VOID_PTR
-  MultiParam15          VOID_PTR
+repeat 16 i:0
+  MultiParam#i          VOID_PTR
+end repeat
   MaxParams64           VOID_PTR
   MaxParamsMixed        VOID_PTR
 ends
@@ -317,25 +304,20 @@ DriverInstall:
 @0:
   ; Fill in the Custom Protocol interface
   MOVREL    R1, CustomProtocolInterface
-  MOVREL    R7, HelloPtr
-  BREAK     5 ; Generate a Thunk to allow native -> EBC call
+  EXPORT    Hello ; Generate a native -> EBC thunk (in @R7)
   MOVn      @R1(EFI_CUSTOM_PROTOCOL.Hello), @R7
 repeat 16 i:0
-  MOVREL    R7, MultiParam#i#Ptr
-  BREAK     5
+  EXPORT    MultiParam#i
   MOVn      @R1(EFI_CUSTOM_PROTOCOL.MultiParam#i), @R7
 end repeat
-  MOVREL    R7, MaxParamsMixedPtr
-  BREAK     5
+  EXPORT    MaxParamsMixed
   MOVn      @R1(EFI_CUSTOM_PROTOCOL.MaxParamsMixed), @R7
-  MOVREL    R7, MaxParams64Ptr
-  BREAK     5
+  EXPORT    MaxParams64
   MOVn      @R1(EFI_CUSTOM_PROTOCOL.MaxParams64), @R7
 
   ; Fill in the Component Name interfaces
   MOVREL    R1, ComponentName
-  MOVREL    R7, GetDriverNamePtr
-  BREAK     5
+  EXPORT    GetDriverName
   MOVn      @R1(EFI_COMPONENT_NAME_PROTOCOL.GetDriverName), @R7
   MOVn      @R1(EFI_COMPONENT_NAME_PROTOCOL.GetControllerName), R6
   MOVREL    R3, Eng
@@ -348,8 +330,7 @@ end repeat
 
   ; Fill in DriverBinding
   MOVREL    R1, DriverBinding
-  MOVREL    R7, BindingSupportedPtr
-  BREAK     5
+  EXPORT    BindingSupported
   MOVn      @R1(EFI_DRIVER_BINDING_PROTOCOL.Supported), @R7
   MOVn      @R1(EFI_DRIVER_BINDING_PROTOCOL.Start), R6
   MOVn      @R1(EFI_DRIVER_BINDING_PROTOCOL.Stop), R6
@@ -423,6 +404,23 @@ end repeat
   MOVI      R7, EFI_SUCCESS
   RET
 
+section '.exports' data readable writeable
+  ; Any function that may be called from native must be declared with the EXPORT keyword
+  ; in a data section, and provide a C-like call signature in parenthesis.
+  ; Then, during application init, EXPORT should be invoked, with the same function name
+  ; (but without the signature) so that native -> EBC thunks are created through BREAK 5.
+  EXPORT    Hello(VOID)
+repeat 16 i:0
+  ; Custom export declaration for the MultiParam## calls
+  _MultiParam#i:
+            dd MultiParam#i - $ - 4
+            dd EBC_CALL_SIGNATURE or i
+end repeat
+  EXPORT    MaxParams64(UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64)
+  EXPORT    MaxParamsMixed(UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64)
+  EXPORT    BindingSupported(VOID*, VOID*, VOID*)
+  EXPORT    GetDriverName(VOID*, CHAR8*, CHAR16*)
+
 section '.data' data readable writeable
   gST:      dq ?
   LoadedImage:
@@ -431,21 +429,6 @@ section '.data' data readable writeable
             dq ?
   ImageHandle:
             dq ?
-  BindingSupportedPtr:
-            EFIAPI BindingSupported(VOID*, VOID*, VOID*)
-  GetDriverNamePtr:
-            EFIAPI GetDriverName(VOID*, CHAR8*, CHAR16*)
-  HelloPtr:
-            EFIAPI Hello(VOID)
-repeat 16 i:0
-  MultiParam#i#Ptr:
-            dd MultiParam#i - $ - 4
-            dd EBC_CALL_SIGNATURE or i
-end repeat
-  MaxParams64Ptr:
-            EFIAPI MaxParams64(UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64, UINT64)
-  MaxParamsMixedPtr:
-            EFIAPI MaxParamsMixed(UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64, UINTN, UINT64)
   Values:
             dq 0x1B1B1B1B1A1A1A1A, 0x2B2B2B2B2A2A2A2A, 0x3B3B3B3B3A3A3A3A, 0x4B4B4B4B4A4A4A4A
   CustomProtocolInterface:
@@ -475,7 +458,7 @@ end repeat
   IPIMsg:   du "Error InstallProtocolInterface: ", 0x00
   IMPIMsg:  du "Error InstallMultipleProtocolInterfaces: ", 0x00
   HelloMsg: du "Hello from EBC driver", 0x0D, 0x0A, 0x00
-  DrvName:  du "EBC Driver v1.0", 0x00
+  DrvName:  du "EBC Driver v1.1", 0x00
   En:       db "en", 0x00
   Eng:      db "eng", 0x00
   IPMsg1:   du "Expected: ", 0x00
