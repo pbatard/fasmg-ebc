@@ -130,5 +130,3 @@ section '.data' data readable writeable
   HexStr64: du "0x1234567812345678", 0x0D, 0x0A, 0x00
   EpMsg:    du "Entry point: ", 0x00
   ExitMsg:  du "Press any key to exit", 0x0D, 0x0A, 0x00
-
-section '.reloc' fixups data discardable

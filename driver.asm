@@ -463,5 +463,3 @@ section '.data' data readable writeable
   Eng:      db "eng", 0x00
   IPMsg1:   du "Expected: ", 0x00
   IPMsg2:   du "Received: ", 0x00
-
-section '.reloc' fixups data discardable

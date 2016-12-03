@@ -17,5 +17,3 @@ EfiMain:
 section '.data' data readable writeable
 
   Test: EFIAPI(UINT64, VOID*, INT64, INT32)
-
-section '.reloc' fixups data discardable

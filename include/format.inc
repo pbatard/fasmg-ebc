@@ -142,8 +142,7 @@ macro format? clause
 	else match =PEEBC? settings, clause:
 		PE.Settings.Magic = 0x20B
 		PE.Settings.Machine = IMAGE_FILE_MACHINE_EBC
-		PE.Settings.Characteristics = IMAGE_FILE_EXECUTABLE_IMAGE or IMAGE_FILE_32BIT_MACHINE
-		PE.Settings.DllCharacteristics = IMAGE_FILE_DLL
+		PE.Settings.Characteristics = IMAGE_FILE_EXECUTABLE_IMAGE or IMAGE_FILE_32BIT_MACHINE or IMAGE_FILE_DLL
 		PE.Settings.MajorSubsystemVersion = 5
 		PE.Settings.MinorSubsystemVersion = 0
 		PE.Settings.Stub = "stub.com"

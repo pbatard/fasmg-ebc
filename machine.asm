@@ -126,5 +126,3 @@ section '.data' data readable writeable
   HexStr64: du "0x1234567812345678", 0x0D, 0x0A, 0x00
   MtMsg     du "PE Machine Type = ", 0x00
   OpMsg:    du "OpenProtocol: ", 0x00
-
-section '.reloc' fixups data discardable

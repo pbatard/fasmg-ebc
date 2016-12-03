@@ -228,5 +228,3 @@ section '.data' data readable writeable
   OpMsg:    du "OpenProtocol: ", 0x00
   LhMsg:    du "LocateHandle: ", 0x00
   ApMsg:    du "AllocatePool: ", 0x00
-
-section '.reloc' fixups data discardable

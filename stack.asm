@@ -23,5 +23,3 @@ EfiMain:
 section '.data' data readable writeable
   StackBuf: dq 255
   StackTop: dq 1
-
-section '.reloc' fixups data discardable

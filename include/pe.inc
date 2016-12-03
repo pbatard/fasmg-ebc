@@ -121,64 +121,66 @@ namespace PE
 	end if
 
 	if defined Settings.Machine
-	      MACHINE = Settings.Machine
+		MACHINE = Settings.Machine
 	else
-	      MACHINE = IMAGE_FILE_MACHINE_I386
+		MACHINE = IMAGE_FILE_MACHINE_I386
 	end if
 
 	if defined Settings.Characteristics
-	      CHARACTERISTICS = Settings.Characteristics
+		CHARACTERISTICS = Settings.Characteristics
 	else
-	      CHARACTERISTICS = IMAGE_FILE_EXECUTABLE_IMAGE or IMAGE_FILE_32BIT_MACHINE
+		CHARACTERISTICS = IMAGE_FILE_EXECUTABLE_IMAGE or IMAGE_FILE_32BIT_MACHINE
 	end if
 
 	if defined Settings.DllCharacteristics
-	      DLL_CHARACTERISTICS = Settings.DllCharacteristics
+		DLL_CHARACTERISTICS = Settings.DllCharacteristics
 	else
-	      DLL_CHARACTERISTICS = 0
+		DLL_CHARACTERISTICS = 0
 	end if
 
 	if defined Settings.Subsystem
-	      SUBSYSTEM = Settings.Subsystem
+		SUBSYSTEM = Settings.Subsystem
 	else
-	      SUBSYSTEM = IMAGE_SUBSYSTEM_WINDOWS_CUI
+		SUBSYSTEM = IMAGE_SUBSYSTEM_WINDOWS_CUI
 	end if
 
 	if defined Settings.MajorSubsystemVersion
-	      MAJOR_SUBSYSTEM_VERSION = Settings.MajorSubsystemVersion
+		MAJOR_SUBSYSTEM_VERSION = Settings.MajorSubsystemVersion
 	else
-	      MAJOR_SUBSYSTEM_VERSION = 3
+		MAJOR_SUBSYSTEM_VERSION = 3
 	end if
 
 	if defined Settings.MinorSubsystemVersion
-	      MINOR_SUBSYSTEM_VERSION = Settings.MinorSubsystemVersion
+		MINOR_SUBSYSTEM_VERSION = Settings.MinorSubsystemVersion
 	else
-	      MINOR_SUBSYSTEM_VERSION = 10
+		MINOR_SUBSYSTEM_VERSION = 10
 	end if
 
 	if defined Fixups
-	      element RELOCATION
+		element RELOCATION
 	else
-	      RELOCATION := 0
-	      CHARACTERISTICS = CHARACTERISTICS or IMAGE_FILE_RELOCS_STRIPPED
+		RELOCATION := 0
+		if MACHINE <> IMAGE_FILE_MACHINE_EBC
+			CHARACTERISTICS = CHARACTERISTICS or IMAGE_FILE_RELOCS_STRIPPED
+		end if
 	end if
 
 	if defined Settings.ImageBase
-	      IMAGE_BASE := RELOCATION + Settings.ImageBase
+		IMAGE_BASE := RELOCATION + Settings.ImageBase
 	else
-	      IMAGE_BASE := RELOCATION + 400000h
+		IMAGE_BASE := RELOCATION + 400000h
 	end if
 
 	if defined Settings.SectionAlignment
-	      SECTION_ALIGNMENT := Settings.SectionAlignment
+		SECTION_ALIGNMENT := Settings.SectionAlignment
 	else
-	      SECTION_ALIGNMENT := 1000h
+		SECTION_ALIGNMENT := 1000h
 	end if
 
 	if defined Settings.FileAlignment
-	      FILE_ALIGNMENT := Settings.FileAlignment
+		FILE_ALIGNMENT := Settings.FileAlignment
 	else
-	      FILE_ALIGNMENT := 512
+		FILE_ALIGNMENT := 512
 	end if
 
 	NUMBER_OF_DIRECTORIES := 16

@@ -59,5 +59,3 @@ section '.data' data readable writeable
   Message:  du 0x0D, 0x0A
             du "Press any key to exit", 0x0D, 0x0A
             du 0x00
-
-section '.reloc' fixups data discardable

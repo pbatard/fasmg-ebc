@@ -193,5 +193,3 @@ section '.data' data readable writeable
   HexStr32: du "0x12345678", 0x0D, 0x0A, 0x00
   HexStr64: du "0x1234567812345678", 0x0D, 0x0A, 0x00
   LPMsg:    du "LocateProtocol: ", 0x00
-
-section '.reloc' fixups data discardable

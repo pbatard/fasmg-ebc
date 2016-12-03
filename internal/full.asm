@@ -118,7 +118,3 @@ Exit:
 
   RET
   BREAK 12
-
-section '.data' data readable writeable
-
-section '.reloc' fixups data discardable

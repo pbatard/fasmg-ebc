@@ -88,5 +88,3 @@ include 'tail.inc'
   StackBuf: dq 255
   StackTop: dq 1
   Buffer:   dq 1
-
-section '.reloc' fixups data discardable
