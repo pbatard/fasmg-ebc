@@ -66,9 +66,8 @@ macro abs abs_val, val
   end if
 end macro
 
+; WARNING: This only works properly if element RELOCATION is defined in pe.inc!
 macro is_relative ret, val
-  local v
-  v = val
   if (val relativeto $)
     ret = 1
   else
