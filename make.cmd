@@ -120,6 +120,7 @@ if [%FILE%]==[protocol] (
 )
 
 "%QEMU_PATH%%QEMU_EXE%" %QEMU_OPTS% -L . -bios %QEMU_FIRMWARE% -hda fat:image
+rem -hdb ntfs.vhd
 del /q trace-* >NUL 2>&1
 
 :end

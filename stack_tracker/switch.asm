@@ -1,5 +1,5 @@
 ;
-; Alloc - Test stack tracker for reallocted stack
+; Switch - Test stack tracker for stack switching
 ; Copyright © 2016 Pete Batard <pete@akeo.ie> - Public Domain
 ;
 ; Note: This test is not included in our suite because switching stack
@@ -8,7 +8,7 @@
 ; main directory.
 ;
 
-TEST_NAME = "Alloc"
+TEST_NAME = "Switch"
 
 include 'head.inc'
 

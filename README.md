@@ -64,3 +64,6 @@ For more, see `efi.inc` and `hello.asm`.
   architecture (e.g. `make hello qemu aa64`)
 * You can also debug the samples with the EBC Debugger by replacing `qemu` with `debug`
   (e.g. `make arch debug arm`). The EBC Debugger will be automatically downloaded for the required arch.
+
+__Note:__ On its own, the EBC assembler is just really what you can find in the `include\` subdirectory.
+  __Everything else__ is just for samples or test data.

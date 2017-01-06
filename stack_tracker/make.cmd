@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 set include=..\include
 
-set FILE_LIST=matrix max cloaked shutdown
+set FILE_LIST=matrix max cloaked realloc shutdown
 set UEFI_EXT=arm
 set QEMU_ARCH=arm
 set QEMU_PATH=C:\Program Files\qemu\
