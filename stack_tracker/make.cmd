@@ -39,6 +39,12 @@ shift
 goto loop
 
 :next
+if not exist fasmg.exe (
+  call cscript /nologo "%~dp0\..\download.vbs" https://flatassembler.net fasmg.zip fasmg.exe fasmg.exe "The latest fasmg assembler"
+  if errorlevel 1 goto end
+  echo.
+)
+
 for %%f in (%FILE_LIST%) do (
   echo fasmg %%f.asm %%f.efi
   fasmg %%f.asm %%f.efi

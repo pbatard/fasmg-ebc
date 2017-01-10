@@ -7,8 +7,6 @@ to produce EBC executables..._
 
 ## Prerequisites
 
-* [flat assembler g (fasmg)](http://flatassembler.net/download.php).  
-  Please make sure to download the 'g' version of fasm.
 * [QEMU](http://www.qemu.org) __v2.7 or later__
   NB: You can find QEMU Windows binaries [here](https://qemu.weilnetz.de/w64/).  
   Make sure you use QEMU 2.7 or later, as earlier versions may produce a `Synchronous Exception` on AARCH64.
@@ -56,14 +54,14 @@ For more, see `efi.inc` and `hello.asm`.
 
 ## Assembly and testing (Windows)
 
-* Make sure fasmg is in your path, or copy `fasmg.exe` to the current directory
-* Run `make` to compile the `hello.asm` sample
-* Additionally, you can compile one of the other samples by providing its short name (e.g. `make ebctest`)
+* Run `make` to compile the `hello.asm` sample. If not already available, the latest fasmg binary is 
+  downloaded automatically.
+* Additionally, you can compile one of the other samples by providing its short name (e.g. `make arch`)
 * If you have QEMU installed, you can add a `qemu` parameter to run the application (e.g. `make hello qemu`)  
-  You can also add one of `x64`, `ia32`, `arm` and `aa64` to run the application against a specific UEFI
+  You may also add one of `x64`, `ia32`, `arm` and `aa64` to run the application against a specific UEFI
   architecture (e.g. `make hello qemu aa64`)
-* You can also debug the samples with the EBC Debugger by replacing `qemu` with `debug`
+* If you wish to debug the samples with the EBC Debugger, simply replace `qemu` with `debug`
   (e.g. `make arch debug arm`). The EBC Debugger will be automatically downloaded for the required arch.
 
-__Note:__ On its own, the EBC assembler is just really what you can find in the `include\` subdirectory.
-  __Everything else__ is just for samples or test data.
+__Note:__ The assembler itself is really only comprised of the files you can find under `include\`.
+  __Everything else__ is just samples or test data.
