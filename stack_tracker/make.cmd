@@ -9,8 +9,7 @@ set QEMU_PATH=C:\Program Files\qemu\
 set QEMU_OPTS=-net none -monitor none -parallel none
 set FIRMWARE_BASENAME=QEMU_EFI
 set RUN_QEMU=
-set SERIAL_LOG=
-set COPY_FW=
+set COPY_SRC=
 
 :loop
 if [%1]==[] goto next
@@ -27,7 +26,7 @@ if [%1]==[qemu] (
 ) else if [%1]==[serial] (
   set QEMU_OPTS=%QEMU_OPTS% -serial file:serial_%UEFI_EXT%.log
 ) else if [%1]==[copy] (
-  set COPY_FW=1
+  set COPY_SRC=\\debian\src\edk2\Build\ArmVirtQemu-ARM\RELEASE_GCC5\FV\QEMU_EFI.fd
 ) else (
   set FILE=%1
   if not exist "%1.asm" (
@@ -63,8 +62,9 @@ if [%UEFI_EXT%]==[ia32] (
 set QEMU_FIRMWARE=%FIRMWARE_BASENAME%_%UEFI_EXT_UPPERCASE%.fd
 set QEMU_EXE=qemu-system-%QEMU_ARCH%w.exe
 set ZIP_FILE=%FIRMWARE_BASENAME%-%UEFI_EXT_UPPERCASE%.zip
-if not [%COPY_FW%]==[] (
-  copy "\\debian\src\edk2\Build\ArmVirtQemu-ARM\RELEASE_GCC5\FV\QEMU_EFI.fd" QEMU_EFI_ARM.fd
+if not [%COPY_SRC%]==[] (
+  echo Copy %COPY_SRC% to %QEMU_FIRMWARE%
+  copy %COPY_SRC% %QEMU_FIRMWARE%
 ) else if not exist %QEMU_FIRMWARE% (
   call cscript /nologo "%~dp0\..\download.vbs" http://efi.akeo.ie/%FIRMWARE_BASENAME% %ZIP_FILE% %FIRMWARE_BASENAME%.fd %QEMU_FIRMWARE% "The UEFI firmware file, needed for QEMU,"
   if errorlevel 1 goto end
