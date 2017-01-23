@@ -46,6 +46,12 @@ if [%1]==[debug] (
   set FW_EXT=_ntfs
   set HDA=ntfs.vhd
   set QEMU_EXTRA=-hdb fat:image
+  echo This is a FAT file system > image/THIS_IS_FAT.txt
+  if not exist ntfs.vhd (
+    call cscript /nologo "%~dp0download.vbs" http://efi.akeo.ie/EBC/FAT ntfs.zip ntfs.vhd ntfs.vhd "An NTFS test VHD including a Fat EBC driver"
+    if errorlevel 1 goto end
+    echo.
+  )
 ) else if [%1]==[copy] (
   set COPY_SRC=\\debian\src\edk2\Build\ArmVirtQemu-ARM\RELEASE_GCC5\FV\QEMU_EFI.fd
 ) else (
@@ -82,7 +88,7 @@ if [%UEFI_EXT%]==[ia32] (
 
 set QEMU_FIRMWARE=%FIRMWARE_BASENAME%_%UEFI_EXT_UPPERCASE%%FW_EXT%.fd
 set QEMU_EXE=qemu-system-%QEMU_ARCH%w.exe
-set ZIP_FILE=%FIRMWARE_BASENAME%-%UEFI_EXT_UPPERCASE%.zip
+set ZIP_FILE=%FIRMWARE_BASENAME%-%UEFI_EXT_UPPERCASE%%FW_EXT%.zip
 if not [%COPY_SRC%]==[] (
   echo Copy %COPY_SRC% to %QEMU_FIRMWARE%
   copy %COPY_SRC% %QEMU_FIRMWARE%
@@ -137,6 +143,8 @@ if [%FILE%]==[protocol] (
   )
 )
 
+echo.
+echo %QEMU_EXE% %QEMU_OPTS% -L . -bios %QEMU_FIRMWARE% -hda %HDA% %QEMU_EXTRA%
 "%QEMU_PATH%%QEMU_EXE%" %QEMU_OPTS% -L . -bios %QEMU_FIRMWARE% -hda %HDA% %QEMU_EXTRA%
 rem del /q trace-* >NUL 2>&1
 
