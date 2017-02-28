@@ -53,7 +53,7 @@ if [%1]==[debug] (
     echo.
   )
 ) else if [%1]==[copy] (
-  set COPY_SRC=\\debian\src\edk2\Build\ArmVirtQemu-ARM\RELEASE_GCC5\FV\QEMU_EFI.fd
+  set COPY_SRC=\\vm-debian\src\edk2\Build\ArmVirtQemu-ARM\RELEASE_GCC5\FV\QEMU_EFI.fd
 ) else (
   set FILE=%1
   if not exist "%1.asm" (

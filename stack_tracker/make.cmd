@@ -26,7 +26,7 @@ if [%1]==[qemu] (
 ) else if [%1]==[serial] (
   set QEMU_OPTS=%QEMU_OPTS% -serial file:serial_%UEFI_EXT%.log
 ) else if [%1]==[copy] (
-  set COPY_SRC=\\debian\src\edk2\Build\ArmVirtQemu-ARM\RELEASE_GCC5\FV\QEMU_EFI.fd
+  set COPY_SRC=\\vm-debian\src\edk2\Build\ArmVirtQemu-ARM\RELEASE_GCC5\FV\QEMU_EFI.fd
 ) else (
   set FILE=%1
   if not exist "%1.asm" (
@@ -52,7 +52,7 @@ for %%f in (%FILE_LIST%) do (
 
 if [%RUN_QEMU%]==[] goto end
 
-if [%QEMU_ARCH%]==[arm] set QEMU_OPTS=%QEMU_OPTS% -M virt -cpu cortex-a15 %QEMU_OPTS%
+if [%QEMU_ARCH%]==[arm] set QEMU_OPTS=-M virt -cpu cortex-a15 %QEMU_OPTS%
 
 set UEFI_EXT_UPPERCASE=ARM
 if [%UEFI_EXT%]==[ia32] (
@@ -84,6 +84,7 @@ for %%f in (%FILE_LIST%) do (
   echo %%f.efi >> image\efi\boot\startup.nsh
 )
 
+echo %QEMU_EXE% %QEMU_OPTS% -L . -bios %QEMU_FIRMWARE% -hda fat:image
 "%QEMU_PATH%%QEMU_EXE%" %QEMU_OPTS% -L . -bios %QEMU_FIRMWARE% -hda fat:image
 del /q trace-* >NUL 2>&1
 
