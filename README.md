@@ -5,6 +5,10 @@ _Because programming in assembler for UEFI is easy and nobody should have to
 [pay](https://software.intel.com/en-us/articles/intel-c-compiler-for-efi-byte-code-purchase)
 to produce EBC executables..._
 
+## FINAL UPDATE - 2023.03.09
+
+This repository is archived, which means that it will not see any changes or any new development.
+
 ## Prerequisites
 
 * [QEMU](http://www.qemu.org) __v2.7 or later__
