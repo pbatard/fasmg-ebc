@@ -16,14 +16,13 @@ include 'head.inc'
   ; impact performance
   MOVI      R1, 9
 Test:
-  ; The stack tracker is 1/64th of STACK_POOL_SIZE at init and, for
-  ; our purpose below, requires 1 bit per 32-bit of stack data.
-  ; => if we reserve space for more than half STACK_POOL_SIZE, we
+  ; The stack tracker is 1/32th of STACK_POOL_SIZE at init.
+  ; If we reserve space for more than half STACK_POOL_SIZE, we
   ; will force our stack tracker to realloc.
   MOV       R0, R0(-0, -(STACK_POOL_SIZE/2 + 1024))
-  ; Add a couple stack operations, for the sake of it
-  PUSH64    R1
-  POP64     R1
+  ; Need to push a Natural for our Index to move
+  PUSHn     R1
+  POPn      R1
   MOV       R0, R0(+0, +(STACK_POOL_SIZE/2 + 1024))
   SUB       R1, R6(1)
   CMPIgte   R1, 0
